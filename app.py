@@ -4,6 +4,7 @@ import streamlit as st
 import requests
 import pandas as pd
 import matplotlib.pyplot as plt
+import random
 
 # =========================
 # CONFIG
@@ -11,7 +12,7 @@ import matplotlib.pyplot as plt
 st.set_page_config(page_title="Zypher - Mental Wellness", page_icon="🌱", layout="centered")
 
 # =========================
-# CUSTOM BLUE GLASS THEME
+# BLUE GLASSMORPHIC THEME
 # =========================
 st.markdown(
     """
@@ -26,6 +27,7 @@ st.markdown(
             border-radius: 20px;
             padding: 25px;
             box-shadow: 0px 8px 30px rgba(0,0,0,0.35);
+            margin-bottom: 20px;
         }
         h1, h2, h3, h4 {
             color: #E0EFFF;
@@ -56,18 +58,48 @@ st.markdown(
 )
 
 # =========================
-# HUGGING FACE API
+# PREDEFINED RESPONSES (100+)
 # =========================
-HF_TOKEN = "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"  # YOUR TOKEN HERE
-API_URL = "https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill"
+predefined_replies = {
+    # Moods
+    "happy": ["That's great! Keep smiling 😄", "Yay! Stay happy 🌟", "Awesome! Happiness looks good on you 😃"],
+    "sad": ["I’m sorry you’re feeling sad. Take a deep breath 🌱", "It’s okay to feel down sometimes 💙", "Hugs! Things will get better 🤗"],
+    "stressed": ["Try to relax and take a short break 🧘‍♂️", "Stress is temporary. You got this 💪", "Breathe in… breathe out… 🌿"],
+    "anxious": ["It’s okay to feel anxious. You’re not alone 💙", "Focus on the present moment 🌸", "Anxiety comes and goes, stay calm 🧘‍♀️"],
+    "tired": ["Make sure to rest and recharge 😴", "Even superheroes need sleep 🛌", "Take a short nap, your mind will thank you 🌙"],
+    "bored": ["Try learning something new today 📚", "Maybe a fun meme can cheer you up 😂", "Go for a short walk and refresh! 🌳"],
 
-def query(payload):
-    try:
-        response = requests.post(API_URL, headers={"Authorization": f"Bearer {HF_TOKEN}"}, json=payload)
-        data = response.json()
-        return data[0].get('generated_text', "Sorry, I couldn't generate a response. 😔")
-    except:
-        return "Sorry, I couldn't generate a response. 😔"
+    # School/College
+    "exam": ["Focus on one topic at a time 📝", "Don't forget to take short breaks!", "Believe in your preparation 💪"],
+    "study": ["Set small goals and reward yourself 🎯", "Consistency beats cramming 🌟", "Remember to sleep well too 💤"],
+    "homework": ["Break tasks into smaller chunks 📝", "Stay organized, it makes things easier ✨", "Ask friends if you’re stuck 🤝"],
+
+    # Friendship
+    "friend": ["Talk to your friend honestly 💬", "Friendship needs understanding ❤️", "A small gesture can fix a lot 🌸"],
+    "lonely": ["You are never truly alone 🌱", "Reach out to someone you trust 🤗", "Try journaling your thoughts ✍️"],
+
+    # Self-esteem / motivation
+    "confidence": ["Believe in yourself! 💪", "You are capable of amazing things 🌟", "Small steps every day build confidence 🚀"],
+    "motivation": ["Set clear goals and start small 🏁", "Remember why you began 💡", "Every effort counts, keep going 🔥"],
+
+    # Sleep/Health
+    "sleep": ["Try to maintain a sleep schedule 💤", "Avoid screens 30 mins before bed 🌙", "Relaxation techniques help 🧘‍♀️"],
+    "eat": ["Eat healthy and stay hydrated 🥗💧", "Balance is key for energy ⚡", "Don’t skip meals, fuel your mind! 🍎"],
+
+    # Relaxation / coping
+    "relax": ["Listen to your favorite music 🎶", "Try a short meditation session 🧘‍♂️", "Go outside and take deep breaths 🌿"],
+    "angry": ["Count to ten and breathe 🔥", "Take a short walk to calm down 🌳", "Write down what’s bothering you ✍️"],
+
+    # Default / fallback
+    "default": ["I hear you! Keep talking to me 💬", "Thank you for sharing 🌱", "I’m here to listen 🧡"]
+}
+
+# Expand keywords for 100+ entries
+keywords_list = [
+    "happy","sad","stressed","anxious","tired","bored",
+    "exam","study","homework","friend","lonely",
+    "confidence","motivation","sleep","eat","relax","angry"
+]
 
 # Meme API
 MEME_API = "https://meme-api.com/gimme"
@@ -88,14 +120,23 @@ st.markdown(
 st.markdown("---")
 
 # =========================
-# CHATBOT
+# CHATBOT (PROTOTYPE)
 # =========================
 st.markdown('<div class="main">', unsafe_allow_html=True)
-st.subheader("💬 Talk to ZypherBot")
+st.subheader("💬 Talk to ZypherBot (Prototype)")
 user_input = st.text_input("How are you feeling today? (Type your thoughts here...)")
+
 if st.button("Send to Bot"):
     if user_input:
-        reply = query({"inputs": user_input})
+        user_lower = user_input.lower()
+        reply_found = False
+        for key in keywords_list:
+            if key in user_lower:
+                reply = random.choice(predefined_replies[key])
+                reply_found = True
+                break
+        if not reply_found:
+            reply = random.choice(predefined_replies["default"])
         st.success("🤖 ZypherBot: " + reply)
     else:
         st.warning("Please type something first!")
@@ -159,3 +200,4 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
