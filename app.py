@@ -132,7 +132,7 @@ if os.path.exists(LOGO_PATH):
 st.title("Zypher — Youth Mental Wellness")
 st.caption("💬 Chat • 📋 Mood Analyzer • 😂 Memes • Mood Log")
 
-tabs = st.tabs(["Chat", "Mood Analyzer", "Memes", "Mood Log", "Settings"])
+tabs = st.tabs(["Chat", "Mood Analyzer", "Memes", "Mood Log"])
 
 # ---------- Chat ----------
 with tabs[0]:
