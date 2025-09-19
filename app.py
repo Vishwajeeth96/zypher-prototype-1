@@ -232,19 +232,6 @@ with tabs[3]:
     if st.session_state.mood_log:
         st.write(pd.DataFrame(st.session_state.mood_log))
 
-# ---------- Settings ----------
-with tabs[4]:
-    st.subheader("⚙️ Settings & Notes")
-    st.markdown("**Add your GenAI key (Streamlit Secrets):**")
-    st.markdown("1. Go to your app → Manage app → Settings → Secrets\n2. Add `GENAI_API_KEY = \"your_key_here\"`\n3. Re-deploy")
-    st.markdown("---")
-    st.markdown("**Notes:**")
-    st.markdown("- Purple + neon theme")
-    st.markdown("- Chat, Mood Analyzer, Memes, Mood Log")
-    st.markdown("- API key stored securely in Streamlit Secrets")
-
-st.markdown("</div>", unsafe_allow_html=True)
-st.markdown("<div class='footer'>✨ Built by <b>Team Zypher</b> — Hackathon Prototype</div>", unsafe_allow_html=True)
 
 
        
