@@ -3,4 +3,3 @@ pandas
 requests
 Pillow
 google-generativeai
-difflib
