@@ -1,30 +1,36 @@
-# Team Zypher – Youth Mental Wellness Prototype
+# 🌱 Zypher • Youth Mental Wellness Chatbot
 
-An interactive prototype built for **[Hackathon Name]**.  
-Our goal is to support youth mental wellness through **empathetic chat, memes, and mood analysis**.  
-
----
-
-## Features
-1. **Chatbot (ZypherBot)** – Conversational support using a dataset of 300+ responses (expandable with your own CSV/JSON).  
-2. **Meme Generator** – Lighten your mood with random memes from a public API.  
-3. **Mood Analyzer** – A short questionnaire that suggests the right chat tone.  
-4. **Mood Log** – Keep track of how you feel with simple text entries (no charts).  
-5. **Custom Dataset Upload** – Upload your own CSV/JSON (500–1000 entries) to personalize chatbot replies.  
+A **youth mental wellness chatbot prototype** built with **Streamlit**. ZypherBot helps users talk about their feelings, suggests mood-based responses, and adds fun with memes — all powered by **GenAI API** for intelligent conversation.  
 
 ---
 
-## 🚀 Try it out
-👉 [Live Prototype on Streamlit](https://zypher-prototype.streamlit.app)  
+## 🚀 Features
 
-(No install required, runs directly in your browser)
+- 💬 **Chat with GenAI-powered ZypherBot**  
+  Get intelligent and empathetic replies based on your input and mood.
+
+- 📋 **Mood Analyzer**  
+  Answer a quick questionnaire to see your mood score and influence chatbot tone.
+
+- 😂 **Meme Generator**  
+  Fun, light-hearted memes to lift your spirits.
+
+- 📓 **Mood Log History**  
+  Track your moods over time with an easy log.
+
+- 📂 **Upload Canned Responses (Optional)**  
+  CSV/JSON upload to improve chatbot responses with pre-defined Q→A pairs.
+
+- 🎨 **Polished UI**  
+  Glassmorphic, youth-friendly colors and responsive layout.
 
 ---
 
-## 🛠️ Run Locally
-Clone this repo and install dependencies:
+## 🛠 Installation & Setup
+
+1. **Clone the repository**
 ```bash
-git clone https://github.com/<your-username>/<your-repo>.git
-cd <your-repo>
-pip install -r requirements.txt
+git clone https://github.com/<your-username>/zypher-bot.git
+cd zypher-bot
+
 streamlit run app.py
