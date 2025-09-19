@@ -17,7 +17,7 @@ import datetime
 st.set_page_config(page_title="Zypher • Youth Mental Wellness", page_icon="🌱", layout="centered")
 
 # 🔑 Your GenAI API Key (replace with your own)
-genai.configure(api_key="YOUR_API_KEY_HERE")
+genai.configure(api_key=AIzaSyCiKzF8VZhUMFMUqoppQAQWED4zcl_rAlc)
 MODEL = genai.GenerativeModel("gemini-1.5-flash")
 
 # ====== HELPERS ======
