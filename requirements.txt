@@ -1,5 +1,5 @@
-streamlit
+streamlit>=1.25.0
 pandas
 requests
 Pillow
-google-generativeai
+google-generativeai>=0.1.2
