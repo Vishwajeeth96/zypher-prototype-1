@@ -52,7 +52,7 @@ else:
     genai.configure(api_key=api_key)
 
 # ---------- SIDEBAR ----------
-st.sidebar.image("zypher_logo.png", use_container_width=True)
+
 st.sidebar.title("⚡ Zypher Control Panel")
 st.sidebar.markdown("Black & Green Theme Active ✅")
 
