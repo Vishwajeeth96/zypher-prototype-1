@@ -6,17 +6,12 @@ import random
 import requests
 from io import BytesIO
 from PIL import Image
-import html
 
 # ---------------- Page Config ----------------
-st.set_page_config(
-    page_title="Zypher - Youth Mental Wellness",
-    page_icon="🌿",
-    layout="wide",
-)
+st.set_page_config(page_title="Zypher - Youth Mental Wellness", page_icon="🌿", layout="wide")
 
 # ---------------- Gemini API Setup ----------------
-api_key = st.secrets.get("GEMINI_API_KEY", None)
+api_key = st.secrets.get("GEMINI_API_KEY")
 if api_key:
     genai.configure(api_key=api_key)
 else:
@@ -37,12 +32,12 @@ if "chat_history" not in st.session_state:
 if "mood_log" not in st.session_state:
     st.session_state.mood_log = []
 
-# ---------------- Chatbot Response Function ----------------
+# ---------------- Chatbot Response ----------------
 def get_bot_response(user_input, mood="neutral"):
     try:
         model = genai.GenerativeModel("gemini-1.5-flash")
         response = model.generate_content(user_input)
-        return response.text
+        return str(response.text)
     except:
         return random.choice(fallback_responses.get(mood, ["I’m here for you. 💙"]))
 
@@ -52,43 +47,38 @@ st.markdown("""
 .left-panel {
     background-color:#0d1117;
     padding:15px;
-    border-radius:8px;
+    border-radius:10px;
     color:#c9d1d9;
     height:90vh;
     overflow-y:auto;
 }
 .right-panel {
-    background-color:#f0f3f6;
+    background-color:#f5f6f7;
     padding:15px;
-    border-radius:8px;
+    border-radius:10px;
     height:90vh;
     overflow-y:auto;
 }
-.stRadio > label {color:#c9d1d9;}
 .stButton>button {
-    background: linear-gradient(90deg, #ff79c6, #8a2be2);
-    color: #fff;
-    font-weight: 600;
-    border-radius: 8px;
-    padding:6px 12px;
+    background: linear-gradient(90deg,#ff79c6,#8a2be2);
+    color:#fff;font-weight:600;border-radius:8px;padding:6px 12px;
 }
-h1, h2, h3 {margin:5px 0;}
+h1,h2,h3 {margin:5px 0;}
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- Layout Columns ----------------
-left_col, chat_col = st.columns([0.8,2.2])
+# ---------------- Layout ----------------
+left_col, chat_col = st.columns([0.9,2.3])
 
 # ---------------- Left Panel ----------------
 with left_col:
     st.markdown('<div class="left-panel">', unsafe_allow_html=True)
 
-    # Mood Log
     st.header("🌸 Mood Log")
     current_mood = st.radio("Current Mood", ["happy","sad","angry","neutral"], horizontal=True)
     if st.button("Log Mood"):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        st.session_state.mood_log.append({"mood":current_mood, "timestamp":timestamp})
+        st.session_state.mood_log.append({"mood":current_mood,"timestamp":timestamp})
         st.success(f"Mood '{current_mood}' logged at {timestamp}")
 
     if st.session_state.mood_log:
@@ -96,7 +86,6 @@ with left_col:
         for entry in reversed(st.session_state.mood_log[-5:]):
             st.write(f"{entry['timestamp']} → {entry['mood']}")
 
-    # Meme Generator
     st.header("😂 Meme Generator")
     if st.button("Generate Meme"):
         try:
@@ -108,9 +97,8 @@ with left_col:
             else:
                 st.warning("Could not fetch meme right now.")
         except Exception as e:
-            st.error("Meme fetch failed: " + str(e))
+            st.error("Meme fetch failed: "+str(e))
 
-    # Mood Analyzer
     st.header("📋 Mood Analyzer")
     questions = [
         {"q":"How have you been feeling today?","opts":["Very good","Good","Neutral","Bad","Very bad"]},
@@ -121,8 +109,8 @@ with left_col:
     ]
     with st.form("mood_form"):
         answers=[]
-        for i,qq in enumerate(questions):
-            answers.append(st.radio(qq["q"], qq["opts"], index=2, key=f"q{i}"))
+        for i,q in enumerate(questions):
+            answers.append(st.radio(q["q"], q["opts"], index=2, key=f"q{i}"))
         submit = st.form_submit_button("Analyze Mood")
     if submit:
         score_map = {"Very good":5,"Good":4,"Neutral":3,"Bad":2,"Very bad":1,
@@ -132,12 +120,11 @@ with left_col:
                      "Very connected":5,"Somewhat connected":4,"Neutral":3,"Somewhat disconnected":2,"Very disconnected":1}
         total = sum(score_map.get(a,3) for a in answers)
         avg = total / len(questions)
-        if avg >= 4.5: analysis, suggested="Very Positive and Happy","happy"
-        elif avg >= 3.5: analysis, suggested="Generally Positive","neutral"
-        elif avg >= 2.5: analysis, suggested="Neutral","neutral"
-        elif avg >= 1.5: analysis, suggested="Stressed or Negative","sad"
-        else: analysis, suggested="Very Negative or Upset","angry"
-
+        if avg >= 4.5: analysis,suggested="Very Positive and Happy","happy"
+        elif avg >= 3.5: analysis,suggested="Generally Positive","neutral"
+        elif avg >= 2.5: analysis,suggested="Neutral","neutral"
+        elif avg >= 1.5: analysis,suggested="Stressed or Negative","sad"
+        else: analysis,suggested="Very Negative or Upset","angry"
         st.markdown(f"**Average Mood Score:** {avg:.2f}")
         st.info(f"Analysis: {analysis}")
         st.markdown(f"**Suggested Chat Tone:** `{suggested}`")
@@ -147,29 +134,25 @@ with left_col:
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ---------------- Chat Column ----------------
+# ---------------- Chat Panel ----------------
 with chat_col:
     st.markdown('<div class="right-panel">', unsafe_allow_html=True)
-    st.header("🌿 Zypher Chatbot")  # Removed extra white box
+    st.subheader("🌿 Zypher Chatbot")  # Removed extra white box
+
     user_input = st.chat_input("Type your message...")
     if user_input:
         st.session_state.chat_history.append({
-            "from":"user",
-            "text":user_input,
-            "time":datetime.now().strftime("%H:%M")
+            "from":"user","text":str(user_input),"time":datetime.now().strftime("%H:%M")
         })
         reply = get_bot_response(user_input, current_mood)
         st.session_state.chat_history.append({
-            "from":"bot",
-            "text":reply,
-            "time":datetime.now().strftime("%H:%M")
+            "from":"bot","text":str(reply),"time":datetime.now().strftime("%H:%M")
         })
 
-    # Display chat history
     for msg in st.session_state.chat_history:
-        text = html.escape(msg["text"])
-        time = msg["time"]
-        if msg["from"]=="user":
+        text = str(msg.get("text",""))
+        time = msg.get("time","")
+        if msg.get("from")=="user":
             with st.chat_message("user"):
                 st.markdown(f"👤 **You:** {text}  \n*{time}*")
         else:
