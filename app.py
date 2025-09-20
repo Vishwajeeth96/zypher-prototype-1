@@ -1,388 +1,165 @@
-# app.py — Zypher • Youth Mental Wellness
+# app.py — Zypher • Youth Mental Wellness Chatbot
+
 import streamlit as st
+import streamlit.components.v1 as components
 import google.generativeai as genai
+import requests, random, html
 from datetime import datetime
-import random
-import requests
 from io import BytesIO
 from PIL import Image
-import html
 
-# ---------------- Page Config ----------------
-st.set_page_config(
-    page_title="Zypher - Youth Mental Wellness",
-    page_icon="🌿",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
+# 1) PAGE SETUP
+st.set_page_config(page_title="Zypher AI Bot", page_icon="🌿", layout="wide")
 
-# ---------------- Gemini API Setup ----------------
-api_key = st.secrets.get("GEMINI_API_KEY")
-if api_key:
-    genai.configure(api_key=api_key)
-else:
-    st.error("⚠ Gemini API key not found in secrets!")
-    st.stop()
-
-# ---------------- Fallback Responses ----------------
-fallback_responses = {
-    "happy": ["That’s amazing! 🌸", "Keep shining today! ✨", "Happiness looks good on you! 💖"],
-    "sad": ["I hear you 💙", "It’s okay to not feel okay 🌧", "Sending you a virtual hug 🤗"],
-    "angry": ["Take a deep breath 🧘", "It’s okay to vent 💢", "Want a quick calming exercise?"],
-    "neutral": ["Got it. I’m listening 👂", "I understand. Tell me more…", "Thanks for sharing 💭"],
-}
-
-# ---------------- Session State Initialization ----------------
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-if "mood_log" not in st.session_state:
-    st.session_state.mood_log = []
-if "current_mood" not in st.session_state:
-    st.session_state.current_mood = "neutral"
-
-# ---------------- Chatbot Response Function ----------------
-def get_bot_response(user_input, mood="neutral"):
-    try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(user_input)
-        return str(response.text)
-    except Exception:
-        # Return a random fallback response based on mood if API call fails
-        return random.choice(fallback_responses.get(mood, ["I’m here for you. 💙"]))
-
-# ---------------- Custom CSS ----------------
-st.markdown(
-    """
+# Hide Streamlit header/menu/footer and top padding
+st.markdown("""
 <style>
-/* Left panel container */
-.left-panel-box {
-    background-color: #0d1117;
-    padding: 20px;
-    border-radius: 10px;
-    color: #c9d1d9;
-    height: 90vh;
-    overflow-y: auto;
-    box-sizing: border-box;
-}
-
-/* Buttons style */
-.stButton>button {
-    background: linear-gradient(90deg, #ff79c6, #8a2be2);
-    color: #fff;
-    font-weight: 600;
-    border-radius: 8px;
-    padding: 6px 12px;
-    border: none;
-    cursor: pointer;
-}
-
-/* Headings margin */
-h1, h2, h3 {
-    margin: 5px 0;
-}
-
-/* Chat container */
-.chat-container {
-    height: 90vh;
-    overflow-y: auto;
-    padding: 10px 15px 10px 15px;
-    border-radius: 10px;
-    background-color: #f5f5f5;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-}
-
-/* Chat bubbles */
-.user-bubble {
-    background: #8be9fd;
-    color: #000;
-    padding: 10px 14px;
-    border-radius: 15px 15px 0 15px;
-    margin: 5px 0;
-    max-width: 75%;
-    align-self: flex-end;
-    word-wrap: break-word;
-    white-space: pre-wrap;
-}
-
-.bot-bubble {
-    background: #6272a4;
-    color: #fff;
-    padding: 10px 14px;
-    border-radius: 15px 15px 15px 0;
-    margin: 5px 0;
-    max-width: 75%;
-    align-self: flex-start;
-    word-wrap: break-word;
-    white-space: pre-wrap;
-}
-
-/* Timestamp style */
-.timestamp {
-    font-size: 10px;
-    color: #555;
-    margin-top: 4px;
-    text-align: right;
-}
-
-/* Scrollbar styling for left panel and chat container */
-.left-panel-box::-webkit-scrollbar,
-.chat-container::-webkit-scrollbar {
-    width: 8px;
-}
-
-.left-panel-box::-webkit-scrollbar-thumb,
-.chat-container::-webkit-scrollbar-thumb {
-    background-color: rgba(100, 100, 100, 0.3);
-    border-radius: 4px;
-}
-
-/* Remove white box above chatbot header */
-[data-testid="stVerticalBlock"] > div:first-child {
-    padding-top: 0 !important;
-    margin-top: 0 !important;
-}
-
-/* Chat input container fix */
-div[data-testid="stChatInput"] > div {
-    padding: 0 !important;
-}
-
-/* Scroll to bottom anchor */
-#bottom {
-    float: left;
-    clear: both;
-}
+  #MainMenu, header, footer { visibility: hidden !important; }
+  .block-container { padding-top:0 !important; }
+  .user-bubble, .bot-bubble {
+    margin:0.5rem 0; padding:0.5rem 1rem; max-width:75%; display:inline-block;
+    line-height:1.4;
+  }
+  .user-bubble {
+    background:#e1f5fe; border-radius:1rem 1rem 0.5rem 1rem;
+  }
+  .bot-bubble {
+    background:#c8e6c9; border-radius:1rem 1rem 1rem 0.5rem;
+  }
+  .timestamp {
+    display:block; font-size:0.7rem; color:#555; margin-top:0.2rem;
+  }
+  h1, h2, h3 { margin-top:0.2rem; margin-bottom:0.5rem; }
 </style>
-""",
-    unsafe_allow_html=True,
-)
+""", unsafe_allow_html=True)
 
-# ---------------- Layout Columns ----------------
-left_col, chat_col = st.columns([1, 2], gap="small")
+# 2) GEMINI API
+api_key = st.secrets.get("GEMINI_API_KEY", "")
+if not api_key:
+    st.error("⚠️ GEMINI_API_KEY not found in Secrets!")
+    st.stop()
+genai.configure(api_key=api_key)
 
-# ---------------- Left Panel (Mood Log, Meme Generator, Mood Analyzer) ----------------
+# 3) SESSION STATE
+st.session_state.setdefault("mood_log", [])
+st.session_state.setdefault("chat_history", [])
+
+# 4) FALLBACKS & BOT HELPER
+fallbacks = {
+    "happy":   ["That’s amazing! 🌸","Keep shining! ✨","Happiness suits you! 💖"],
+    "sad":     ["I hear you 💙","It’s okay to not feel okay 🌧️","Sending a hug 🤗"],
+    "angry":   ["Breathe in… breathe out 🧘","It’s okay to vent 💢","Need a calming tip?"],
+    "neutral": ["I’m listening 👂","Tell me more…","Thanks for sharing 💭"]
+}
+def get_bot_response(text, mood="neutral"):
+    try:
+        mdl = genai.GenerativeModel("gemini-1.5-flash")
+        return mdl.generate_content(text).text.strip()
+    except:
+        return random.choice(fallbacks.get(mood, ["I’m here for you. 💙"]))
+
+# 5) LAYOUT: TWO COLUMNS, FLUSH TOP
+left_col, right_col = st.columns([1, 2], gap="small")
+
+# --- LEFT PANEL: Mood Log / Meme / Analyzer
 with left_col:
-    st.markdown('<div class="left-panel-box">', unsafe_allow_html=True)
-
-    # --- Mood Log ---
     st.header("🌸 Mood Log")
-    # Radio buttons for current mood selection, synced with session state
-    current_mood = st.radio(
-        "Current Mood",
-        ["happy", "sad", "angry", "neutral"],
-        index=["happy", "sad", "angry", "neutral"].index(st.session_state.current_mood),
-        horizontal=True,
-        key="mood_radio",
-    )
-    st.session_state.current_mood = current_mood  # Update session state
-
+    current_mood = st.radio("Select mood", ["happy","sad","angry","neutral"], horizontal=True, index=3)
     if st.button("Log Mood"):
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        st.session_state.mood_log.append({"mood": current_mood, "timestamp": timestamp})
-        st.success(f"Mood '{current_mood}' logged at {timestamp}")
+        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        st.session_state.mood_log.append({"mood":current_mood, "timestamp":ts})
+        st.success(f"Logged {current_mood} at {ts}")
 
     if st.session_state.mood_log:
         st.subheader("📅 Recent Entries")
-        # Show last 5 mood log entries in reverse order (most recent first)
-        for entry in reversed(st.session_state.mood_log[-5:]):
-            st.write(f"{entry['timestamp']} → {entry['mood']}")
+        for e in reversed(st.session_state.mood_log[-5:]):
+            st.write(f"{e['timestamp']} → {e['mood']}")
 
     st.markdown("---")
 
-    # --- Meme Generator ---
     st.header("😂 Meme Generator")
-    if st.button("Generate Meme"):
+    if st.button("Fetch Meme"):
         try:
-            r = requests.get("https://meme-api.com/gimme", timeout=6).json()
-            url = r.get("url")
-            title = r.get("title")
+            m = requests.get("https://meme-api.com/gimme", timeout=5).json()
+            url, cap = m.get("url"), m.get("title","")
             if url:
                 img = Image.open(BytesIO(requests.get(url).content))
-                st.image(img, caption=title)
+                st.image(img, caption=cap, use_column_width=True)
             else:
-                st.warning("Could not fetch meme right now.")
-        except Exception as e:
-            st.error("Meme fetch failed: " + str(e))
+                st.warning("No meme right now.")
+        except:
+            st.error("Failed to fetch meme.")
 
     st.markdown("---")
 
-    # --- Mood Analyzer ---
     st.header("📋 Mood Analyzer")
     questions = [
-        {
-            "q": "How have you been feeling today?",
-            "opts": ["Very good", "Good", "Neutral", "Bad", "Very bad"],
-        },
-        {
-            "q": "How motivated are you?",
-            "opts": [
-                "Very motivated",
-                "Somewhat motivated",
-                "Neutral",
-                "Little motivated",
-                "Not motivated at all",
-            ],
-        },
-        {
-            "q": "How well did you sleep?",
-            "opts": ["Very well", "Well", "Average", "Poorly", "Very poorly"],
-        },
-        {
-            "q": "Rate your stress level:",
-            "opts": ["Very low", "Low", "Moderate", "High", "Very high"],
-        },
-        {
-            "q": "Connected with others recently?",
-            "opts": [
-                "Very connected",
-                "Somewhat connected",
-                "Neutral",
-                "Somewhat disconnected",
-                "Very disconnected",
-            ],
-        },
+        ("Feeling today?", ["Very good","Good","Neutral","Bad","Very bad"]),
+        ("Motivation level?", ["Very high","High","Neutral","Low","Very low"]),
+        ("Sleep quality?", ["Excellent","Good","Average","Poor","Very poor"]),
+        ("Stress level?", ["Very low","Low","Moderate","High","Very high"]),
+        ("Social connection?", ["Very connected","Connected","Neutral","Disconnected","Very disconnected"])
     ]
+    with st.form("analyze_form"):
+        answers = [st.radio(q, opts, index=2, key=f"q{i}") for i,(q,opts) in enumerate(questions)]
+        submitted = st.form_submit_button("Analyze Mood")
 
-    with st.form("mood_form"):
-        answers = []
-        for i, q in enumerate(questions):
-            answers.append(
-                st.radio(q["q"], q["opts"], index=2, key=f"q{i}")
-            )  # default to "Neutral"
-        submit = st.form_submit_button("Analyze Mood")
+    if submitted:
+        score = {opt:5-i for _,opts in questions for i,opt in enumerate(opts)}
+        avg = sum(score.get(a,3) for a in answers) / len(answers)
+        if avg>=4.5: analysis, tone = "Very Positive & Happy","happy"
+        elif avg>=3.5: analysis, tone = "Generally Positive","neutral"
+        elif avg>=2.5: analysis, tone = "Neutral","neutral"
+        elif avg>=1.5: analysis, tone = "Stressed or Negative","sad"
+        else:           analysis, tone = "Very Negative or Upset","angry"
 
-    if submit:
-        score_map = {
-            "Very good": 5,
-            "Good": 4,
-            "Neutral": 3,
-            "Bad": 2,
-            "Very bad": 1,
-            "Very motivated": 5,
-            "Somewhat motivated": 4,
-            "Little motivated": 2,
-            "Not motivated at all": 1,
-            "Very well": 5,
-            "Well": 4,
-            "Average": 3,
-            "Poorly": 2,
-            "Very poorly": 1,
-            "Very low": 5,
-            "Low": 4,
-            "Moderate": 3,
-            "High": 2,
-            "Very high": 1,
-            "Very connected": 5,
-            "Somewhat connected": 4,
-            "Somewhat disconnected": 2,
-            "Very disconnected": 1,
-        }
-        total = sum(score_map.get(a, 3) for a in answers)
-        avg = total / len(questions)
-        if avg >= 4.5:
-            analysis, suggested = "Very Positive and Happy", "happy"
-        elif avg >= 3.5:
-            analysis, suggested = "Generally Positive", "neutral"
-        elif avg >= 2.5:
-            analysis, suggested = "Neutral", "neutral"
-        elif avg >= 1.5:
-            analysis, suggested = "Stressed or Negative", "sad"
-        else:
-            analysis, suggested = "Very Negative or Upset", "angry"
-
-        st.markdown(f"*Average Mood Score:* {avg:.2f}")
+        st.markdown(f"**Avg. Score:** {avg:.2f}")
         st.info(f"Analysis: {analysis}")
-        st.markdown(f"*Suggested Chat Tone:* {suggested}")
+        if st.button("Apply Suggested Tone"):
+            current_mood = tone
+            st.success(f"Chat tone set to {tone}")
 
-        if st.button("Use Suggested Tone"):
-            st.session_state.current_mood = suggested
-            # Update radio button selection as well
-            st.experimental_rerun()
+# --- RIGHT PANEL: Chatbot
+with right_col:
+    st.header("🌿 Zypher Chatbot")
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    # render messages
+    def render_chat():
+        for msg in st.session_state.chat_history:
+            txt = html.escape(msg.get("text",""))
+            ts  = msg.get("timestamp","")
+            cls = "user-bubble" if msg.get("from")=="user" else "bot-bubble"
+            st.markdown(
+                f'<div class="{cls}">{txt}'
+                f'<span class="timestamp">{ts}</span></div>',
+                unsafe_allow_html=True
+            )
+        # anchor for scrolling
+        st.markdown('<div id="bottom"></div>', unsafe_allow_html=True)
 
-# ---------------- Chat Panel ----------------
-with chat_col:
-    st.markdown('<div class="chat-container" id="chat-container">', unsafe_allow_html=True)
+    render_chat()
 
-    # Chat header without white box above
-    st.subheader("🌿 Zypher Chatbot")
-
-    # Placeholder for chat messages
-    chat_placeholder = st.empty()
-
-    # Function to display chat messages with bubbles and timestamps
-    def display_chat():
-        with chat_placeholder.container():
-            for msg in st.session_state.chat_history:
-                text = html.escape(str(msg.get("text", "")))
-                time = msg.get("time", "")
-                if msg.get("from") == "user":
-                    st.markdown(
-                        f'<div class="user-bubble">{text}<div class="timestamp">{time}</div></div>',
-                        unsafe_allow_html=True,
-                    )
-                else:
-                    st.markdown(
-                        f'<div class="bot-bubble">{text}<div class="timestamp">{time}</div></div>',
-                        unsafe_allow_html=True,
-                    )
-            # Anchor div to scroll to bottom
-            st.markdown('<div id="bottom"></div>', unsafe_allow_html=True)
-
-    # Display existing chat history
-    display_chat()
-
-    # Chat input box
-    user_input = st.chat_input("Type your message...")
-
+    # input
+    user_input = st.chat_input("Type your message…")
     if user_input:
-        # Append user message with timestamp
-        st.session_state.chat_history.append(
-            {
-                "from": "user",
-                "text": str(user_input),
-                "time": datetime.now().strftime("%H:%M"),
-            }
-        )
-        # Get bot response with current mood
-        reply = get_bot_response(user_input, st.session_state.current_mood)
-        # Append bot response with timestamp
-        st.session_state.chat_history.append(
-            {
-                "from": "bot",
-                "text": str(reply),
-                "time": datetime.now().strftime("%H:%M"),
-            }
-        )
-        # Rerun to update chat display and scroll
-        st.experimental_rerun()
+        now = datetime.now().strftime("%H:%M")
+        st.session_state.chat_history.append({"from":"user","text":user_input,"timestamp":now})
+        reply = get_bot_response(user_input, current_mood)
+        st.session_state.chat_history.append({
+            "from":"bot","text":reply,"timestamp":datetime.now().strftime("%H:%M")
+        })
+        render_chat()
+        # auto-scroll
+        components.html("""
+            <script>
+            const chat = parent.document.querySelector('div[data-testid="stChatMessageList"]');
+            if(chat) chat.scrollTop = chat.scrollHeight;
+            </script>
+        """, height=0)
 
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# ---------------- Scroll to Bottom JS ----------------
-# This script scrolls the chat container to bottom automatically when new messages appear
+# 6) FOOTER NOTE
 st.markdown(
-    """
-<script>
-const chatContainer = window.parent.document.querySelector('.chat-container');
-if (chatContainer) {
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-}
-</script>
-""",
-    unsafe_allow_html=True,
+    "<div style='text-align:center;color:#888;font-size:0.8rem;"
+    "padding:0.5rem 0;'>🔒 Conversations are end-to-end encrypted.</div>",
+    unsafe_allow_html=True
 )
-
-# ---------------- Footer ----------------
-st.markdown(
-    """
-<div style="text-align:center;color:#555;padding:8px;font-size:12px;">
-🔒 All conversations are end-to-end encrypted. Your privacy is 100% safe here.
-</div>
-""",
-    unsafe_allow_html=True,
-)
-
