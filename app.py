@@ -6,6 +6,7 @@ import requests, random, html
 from datetime import datetime
 from io import BytesIO
 from PIL import Image
+import streamlit.components.v1 as components  # needed for auto-scroll
 
 # 1) PAGE SETUP
 st.set_page_config(page_title="Zypher AI Bot", page_icon="🌿", layout="wide")
@@ -99,13 +100,14 @@ with left_col:
         try:
             m = requests.get("https://meme-api.com/gimme", timeout=5).json()
             url, cap = m.get("url"), m.get("title","")
-            if url:
+            if url and (url.endswith(".jpg") or url.endswith(".png")):
                 img = Image.open(BytesIO(requests.get(url).content))
-                st.image(img, caption=cap, use_column_width=True)
+                st.image(img, caption=cap, use_container_width=True)  # FIXED
             else:
-                st.warning("No meme right now.")
-        except:
-            st.error("Failed to fetch meme.")
+                st.warning("⚠️ No image meme available, here’s a text joke instead:")
+                st.info(m.get("title", "😂 Keep smiling!"))
+        except Exception as e:
+            st.error(f"Failed to fetch meme. ({e})")
 
     st.markdown("---")
 
@@ -146,13 +148,19 @@ with right_col:
             txt = html.escape(msg.get("text",""))
             ts  = msg.get("timestamp","")
             cls = "user-bubble" if msg.get("from")=="user" else "bot-bubble"
+            prefix = "🧑 You: " if msg.get("from")=="user" else "🤖 Zypher: "
             st.markdown(
-                f'<div class="{cls}">{txt}'
+                f'<div class="{cls}"><b>{prefix}</b>{txt}'
                 f'<span class="timestamp">{ts}</span></div>',
                 unsafe_allow_html=True
             )
-        # anchor for scrolling
-        st.markdown('<div id="bottom"></div>', unsafe_allow_html=True)
+        # auto-scroll like ChatGPT
+        components.html("""
+            <script>
+            var chat = parent.document.querySelector('section.main');
+            if(chat) chat.scrollTop = chat.scrollHeight;
+            </script>
+        """, height=0)
 
     render_chat()
 
