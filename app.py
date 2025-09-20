@@ -6,7 +6,7 @@ import requests, random, html
 from datetime import datetime
 from io import BytesIO
 from PIL import Image
-import streamlit.components.v1 as components  # needed for auto-scroll
+import streamlit.components.v1 as components  # for auto-scroll
 
 # 1) PAGE SETUP
 st.set_page_config(page_title="Zypher AI Bot", page_icon="🌿", layout="wide")
@@ -31,22 +31,31 @@ st.markdown("""
     margin:0.5rem 0; padding:0.5rem 1rem; max-width:75%; display:inline-block;
     line-height:1.4; color:#fff;
   }
-  .user-bubble {
-    background:#1565c0; border-radius:1rem 1rem 0.5rem 1rem;
-  }
-  .bot-bubble {
-    background:#2e7d32; border-radius:1rem 1rem 1rem 0.5rem;
-  }
-  .timestamp {
-    display:block; font-size:0.7rem; color:#ccc; margin-top:0.2rem;
-  }
+  .user-bubble { background:#1565c0; border-radius:1rem 1rem 0.5rem 1rem; }
+  .bot-bubble  { background:#2e7d32; border-radius:1rem 1rem 1rem 0.5rem; }
+  .timestamp { display:block; font-size:0.7rem; color:#ccc; margin-top:0.2rem; }
 
   /* Dark mode page */
-  .stApp {
-    background-color:#121212;
-    color:#e0e0e0;
-  }
+  .stApp { background-color:#121212; color:#e0e0e0; }
   h1,h2,h3 { margin-top:0.2rem; margin-bottom:0.5rem; color:#fff; }
+
+  /* Scrollable chat box */
+  .chat-box {
+    max-height: 500px; 
+    overflow-y: auto;
+    padding: 10px;
+    border: 1px solid #333;
+    border-radius: 10px;
+    background: #1e1e1e;
+  }
+  /* Sticky input */
+  .sticky-input {
+    position: sticky;
+    bottom: 0;
+    padding-top: 5px;
+    background: #121212;
+    z-index: 999;
+  }
 </style>
 """, unsafe_allow_html=True)
 
@@ -55,7 +64,7 @@ api_key = st.secrets.get("GEMINI_API_KEY", None)
 if api_key:
     genai.configure(api_key=api_key)
 else:
-    st.error("⚠️ GEMINI_API_KEY not found! Please add it to secrets.toml")
+    st.error("⚠ GEMINI_API_KEY not found! Please add it to secrets.toml")
     st.stop()
 
 # 3) SESSION STATE
@@ -65,7 +74,7 @@ st.session_state.setdefault("chat_history", [])
 # 4) FALLBACKS & BOT HELPER
 fallbacks = {
     "happy":   ["That’s amazing! 🌸","Keep shining! ✨","Happiness suits you! 💖"],
-    "sad":     ["I hear you 💙","It’s okay to not feel okay 🌧️","Sending a hug 🤗"],
+    "sad":     ["I hear you 💙","It’s okay to not feel okay 🌧","Sending a hug 🤗"],
     "angry":   ["Breathe in… breathe out 🧘","It’s okay to vent 💢","Need a calming tip?"],
     "neutral": ["I’m listening 👂","Tell me more…","Thanks for sharing 💭"]
 }
@@ -102,9 +111,9 @@ with left_col:
             url, cap = m.get("url"), m.get("title","")
             if url and (url.endswith(".jpg") or url.endswith(".png")):
                 img = Image.open(BytesIO(requests.get(url).content))
-                st.image(img, caption=cap, use_container_width=True)  # FIXED
+                st.image(img, caption=cap, use_container_width=True)
             else:
-                st.warning("⚠️ No image meme available, here’s a text joke instead:")
+                st.warning("⚠ No image meme available, here’s a text joke instead:")
                 st.info(m.get("title", "😂 Keep smiling!"))
         except Exception as e:
             st.error(f"Failed to fetch meme. ({e})")
@@ -132,48 +141,52 @@ with left_col:
         elif avg>=1.5: analysis, tone = "Stressed or Negative","sad"
         else:           analysis, tone = "Very Negative or Upset","angry"
 
-        st.markdown(f"**Avg. Score:** {avg:.2f}")
+        st.markdown(f"*Avg. Score:* {avg:.2f}")
         st.info(f"Analysis: {analysis}")
         if st.button("Apply Suggested Tone"):
             current_mood = tone
             st.success(f"Chat tone set to {tone}")
 
-# --- RIGHT PANEL: Chatbot
+# --- RIGHT PANEL: Chatbot with sticky input
 with right_col:
     st.header("🌿 Zypher Chatbot")
 
-    # render messages
+    # Function to render chat messages inside the scrollable box
     def render_chat():
+        chat_html = '<div class="chat-box">'
         for msg in st.session_state.chat_history:
             txt = html.escape(msg.get("text",""))
             ts  = msg.get("timestamp","")
             cls = "user-bubble" if msg.get("from")=="user" else "bot-bubble"
             prefix = "🧑 You: " if msg.get("from")=="user" else "🤖 Zypher: "
-            st.markdown(
-                f'<div class="{cls}"><b>{prefix}</b>{txt}'
-                f'<span class="timestamp">{ts}</span></div>',
-                unsafe_allow_html=True
-            )
-        # auto-scroll like ChatGPT
+            chat_html += f'<div class="{cls}"><b>{prefix}</b>{txt}<span class="timestamp">{ts}</span></div>'
+        chat_html += "</div>"
+        st.markdown(chat_html, unsafe_allow_html=True)
+        # auto-scroll
         components.html("""
             <script>
-            var chat = parent.document.querySelector('section.main');
+            var chat = document.querySelector('.chat-box');
             if(chat) chat.scrollTop = chat.scrollHeight;
             </script>
         """, height=0)
 
     render_chat()
 
-    # input
-    user_input = st.chat_input("Type your message…")
-    if user_input:
-        now = datetime.now().strftime("%H:%M")
-        st.session_state.chat_history.append({"from":"user","text":user_input,"timestamp":now})
-        reply = get_bot_response(user_input, current_mood)
-        st.session_state.chat_history.append({
-            "from":"bot","text":reply,"timestamp":datetime.now().strftime("%H:%M")
-        })
-        render_chat()
+    # Sticky input container
+    st.markdown('<div class="sticky-input">', unsafe_allow_html=True)
+    user_input = st.text_input("", key="user_input_sticky", placeholder="Type your message…")
+    if st.button("Send", key="send_sticky"):
+        txt = (st.session_state.get("user_input_sticky") or "").strip()
+        if txt:
+            now = datetime.now().strftime("%H:%M")
+            st.session_state.chat_history.append({"from":"user","text":txt,"timestamp":now})
+            reply = get_bot_response(txt, current_mood)
+            st.session_state.chat_history.append({
+                "from":"bot","text":reply,"timestamp":datetime.now().strftime("%H:%M")
+            })
+            st.session_state.user_input_sticky = ""
+            st.experimental_rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # 6) FOOTER NOTE
 st.markdown(
