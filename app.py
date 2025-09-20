@@ -1,4 +1,5 @@
-# app.py — Zypher • Youth Mental Wellness
+
+        # app.py — Zypher • Youth Mental Wellness
 # Requirements: streamlit, pandas, requests, Pillow, google-generativeai
 # Save logo (optional) at: assets/team_zypher_logo_transparent.png
 # Run: pip install -r requirements.txt
@@ -6,9 +7,7 @@
 
 import os
 import html
-import random
 from io import BytesIO
-
 import streamlit as st
 import pandas as pd
 import requests
@@ -26,9 +25,9 @@ st.markdown(
     """
     <style>
       :root {
-        --bg1: #0d0d0d;  /* dark background */
+        --bg1: #0d0d0d;
         --bg2: #1a0033;
-        --accent: #39ff14; /* neon green */
+        --accent: #ff00ff; /* neon pink */
         --secondary: #8A2BE2; /* violet */
         --muted: #e0e0e0;
       }
@@ -45,27 +44,35 @@ st.markdown(
       }
       h1, h2, h3 { color: var(--accent); text-align:center; margin: 5px 0; }
       .user-bubble {
-        background: rgba(255,255,255,0.08);
+        background: rgba(255,255,255,0.05);
         color: var(--muted);
         padding: 12px 16px;
         border-radius: 14px 14px 4px 14px;
         margin: 6px 0;
         max-width: 75%;
-        float: left;
-        clear: both;
+        align-self: flex-start;
+        box-shadow: 0 0 10px rgba(255,255,255,0.2);
       }
       .bot-bubble {
         background: linear-gradient(90deg, var(--accent), var(--secondary));
-        color: #0d0d0d;
+        color: #fff;
         padding: 12px 16px;
         border-radius: 14px 14px 14px 4px;
         margin: 6px 0;
         max-width: 75%;
-        float: right;
-        clear: both;
+        align-self: flex-end;
         font-weight: 600;
+        text-shadow: 0 0 5px #ff00ff, 0 0 10px #ff00ff, 0 0 20px #ff00ff;
       }
-      .chat-container::after { content: ""; display: table; clear: both; }
+      .chat-container {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        max-height: 400px;
+        overflow-y: auto;
+        padding: 10px;
+        scroll-behavior: smooth;
+      }
       .stButton>button {
         background: linear-gradient(90deg, var(--accent), var(--secondary));
         color: #fff;
@@ -149,13 +156,24 @@ with tabs[0]:
 
     # Display chat
     st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
-    for item in st.session_state.chat_history[::-1]:
+    for item in st.session_state.chat_history:  # newest at bottom
         text = html.escape(item.get("text",""))
         if item.get("from") == "user":
             st.markdown(f"<div class='user-bubble'>{text}</div>", unsafe_allow_html=True)
         else:
             st.markdown(f"<div class='bot-bubble'>{text}</div>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
+
+    # Auto-scroll to bottom
+    st.markdown(
+        """
+        <script>
+        const chat = window.parent.document.querySelector('.chat-container');
+        if(chat){chat.scrollTop = chat.scrollHeight;}
+        </script>
+        """,
+        unsafe_allow_html=True
+    )
 
 # ---------- Mood Analyzer ----------
 with tabs[1]:
