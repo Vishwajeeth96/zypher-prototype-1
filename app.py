@@ -11,47 +11,135 @@ import pandas as pd
 import requests
 from PIL import Image
 
-# ---------------- Page config ----------------
+# ---------------- Page Config ----------------
 LOGO_PATH = "assets/team_zypher_logo_transparent.png"
 if os.path.exists(LOGO_PATH):
     st.set_page_config(page_title="Zypher • Youth Mental Wellness", page_icon=LOGO_PATH, layout="centered")
 else:
     st.set_page_config(page_title="Zypher • Youth Mental Wellness", page_icon="💬", layout="centered")
 
-# ---------------- Theme CSS ----------------
-st.html("""
+# ---------------- Custom CSS ----------------
+st.markdown("""
 <style>
-:root {--bg1:#0d0d0d;--bg2:#1a0033;--accent:#ff00ff;--secondary:#8A2BE2;--muted:#e0e0e0;}
-body{background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--muted);font-family:'Helvetica',sans-serif;}
-.container{background:rgba(255,255,255,0.03);padding:20px;border-radius:15px;box-shadow:0 8px 25px rgba(0,0,0,0.7);}
-h1,h2,h3{color:var(--accent);text-align:center;margin:5px 0;}
-.user-bubble{background:rgba(255,255,255,0.05);color:var(--muted);padding:12px 16px;border-radius:14px 14px 4px 14px;margin:6px 0;max-width:75%;align-self:flex-start;box-shadow:0 0 10px rgba(255,255,255,0.2);}
-.bot-bubble{background:linear-gradient(90deg,var(--accent),var(--secondary));color:#fff;padding:12px 16px;border-radius:14px 14px 14px 4px;margin:6px 0;max-width:75%;align-self:flex-end;font-weight:600;text-shadow:0 0 5px #ff00ff,0 0 10px #ff00ff,0 0 20px #ff00ff;}
-.chat-container{display:flex;flex-direction:column;gap:6px;max-height:400px;overflow-y:auto;padding:10px;scroll-behavior:smooth;}
-.stButton>button{background:linear-gradient(90deg,var(--accent),var(--secondary));color:#fff;font-weight:700;border-radius:10px;padding:8px 12px;}
-.footer{color:#999;text-align:center;padding:8px;font-size:12px;opacity:0.8;}
+:root {
+    --bg1: #0d0d0d;
+    --bg2: #1a0033;
+    --accent: #ff00ff;
+    --secondary: #8A2BE2;
+    --muted: #e0e0e0;
+}
+body {
+    background: linear-gradient(180deg, var(--bg1), var(--bg2));
+    color: var(--muted);
+    font-family: 'Helvetica', sans-serif;
+}
+.container {
+    background: rgba(255,255,255,0.03);
+    padding: 20px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+}
+h1,h2,h3 {
+    color: var(--accent);
+    text-align: center;
+    margin: 5px 0;
+}
+.user-bubble {
+    background: rgba(255,255,255,0.05);
+    color: var(--muted);
+    padding: 14px 18px;
+    border-radius: 16px 16px 4px 16px;
+    margin: 8px 0;
+    max-width: 70%;
+    align-self: flex-start;
+    box-shadow: 0 0 12px rgba(255,255,255,0.2);
+}
+.bot-bubble {
+    background: linear-gradient(90deg,var(--accent),var(--secondary));
+    color: #fff;
+    padding: 14px 18px;
+    border-radius: 16px 16px 16px 4px;
+    margin: 8px 0;
+    max-width: 70%;
+    align-self: flex-end;
+    font-weight: 600;
+    text-shadow: 0 0 5px #ff00ff,0 0 10px #ff00ff,0 0 20px #ff00ff;
+}
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 500px;
+    overflow-y: auto;
+    padding: 10px;
+    scroll-behavior: smooth;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 15px;
+    background: rgba(0,0,0,0.2);
+}
+.stButton>button {
+    background: linear-gradient(90deg,var(--accent),var(--secondary));
+    color: #fff;
+    font-weight: 700;
+    border-radius: 10px;
+    padding: 10px 16px;
+}
+.footer {
+    color:#999;
+    text-align:center;
+    padding:8px;
+    font-size:12px;
+    opacity:0.8;
+}
 </style>
-""")
+""", unsafe_allow_html=True)
 
 # ---------------- Session State ----------------
 if "chat_history" not in st.session_state: st.session_state.chat_history = []
 if "mood_log" not in st.session_state: st.session_state.mood_log = []
 if "active_mood_category" not in st.session_state: st.session_state.active_mood_category = "okay"
 
-# ---------------- Fallback responses ----------------
+# ---------------- Fallback Responses ----------------
 fallback_responses = {
-    "okay": ["I hear you. How’s your day going?", "Thanks for sharing! Want to talk about something positive today?"],
-    "funny": ["Haha, that made me smile! 😄", "Love your humor! Want to share another?"],
-    "traumatized": ["I understand this is tough. Take your time and share what you feel safe sharing.", "It’s okay to feel overwhelmed. I’m here to listen."],
-    "harassed": ["I’m really sorry you’re feeling this way. Do you want to talk about it?", "It’s understandable to feel stressed. I’m here with you."]
+    "okay": [
+        "I hear you. How’s your day going?",
+        "Thanks for sharing! Want to talk about something positive today?",
+        "Feeling good today? Let's chat!"
+    ],
+    "funny": [
+        "Haha, that made me smile! 😄",
+        "Love your humor! Want to share another?",
+        "You crack me up! 😆"
+    ],
+    "traumatized": [
+        "I understand this is tough. Take your time and share what you feel safe sharing.",
+        "It’s okay to feel overwhelmed. I’m here to listen.",
+        "Take a deep breath. I'm here with you."
+    ],
+    "harassed": [
+        "I’m really sorry you’re feeling this way. Do you want to talk about it?",
+        "It’s understandable to feel stressed. I’m here with you.",
+        "You are not alone. Tell me what’s happening."
+    ]
 }
 
 # ---------------- Call Gen AI API ----------------
 def call_genai_api(user_input, tone_hint="okay"):
     api_key = st.secrets["genai"]["api_key"]
-    url = "https://api.genai.example.com/v1/generate"  # Replace with your real API endpoint
-    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-    payload = {"prompt": f"Tone: {tone_hint}. User: {user_input}\nAssistant:", "max_tokens": 150}
+    
+    # Replace with your actual Gen AI API endpoint
+    url = "https://YOUR_GENAI_ENDPOINT_HERE"  
+    
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "prompt": f"Tone: {tone_hint}. User: {user_input}\nAssistant:",
+        "max_tokens": 150
+    }
+
     try:
         resp = requests.post(url, headers=headers, json=payload, timeout=10)
         if resp.status_code == 200:
@@ -60,13 +148,16 @@ def call_genai_api(user_input, tone_hint="okay"):
                 return text
     except:
         pass
+    
     # Fallback if API fails
     return random.choice(fallback_responses.get(tone_hint, ["I'm here to listen. Tell me more."]))
 
 # ---------------- UI ----------------
 st.html('<div class="container"></div>')
 
-if os.path.exists(LOGO_PATH): st.image(LOGO_PATH, width=160)
+# Logo and title
+if os.path.exists(LOGO_PATH):
+    st.image(LOGO_PATH, width=180)
 st.title("Zypher — Youth Mental Wellness")
 st.caption("💬 Chat • 📋 Mood Analyzer • 😂 Memes • Mood Log")
 
@@ -76,17 +167,23 @@ tabs = st.tabs(["Chat", "Mood Analyzer", "Memes", "Mood Log"])
 with tabs[0]:
     st.subheader("💬 Talk to ZypherBot (Safe & Encrypted)")
     user_input = st.text_input("Say something...", key="chat_input")
+    
     col1, col2 = st.columns([4,1])
     with col2:
-        mood_select = st.selectbox("Bot Tone", ["harassed","traumatized","funny","okay"], 
-                                   index=["harassed","traumatized","funny","okay"].index(st.session_state.active_mood_category))
+        mood_select = st.selectbox(
+            "Bot Tone", 
+            ["harassed","traumatized","funny","okay"], 
+            index=["harassed","traumatized","funny","okay"].index(st.session_state.active_mood_category)
+        )
         if st.button("Apply Mood Tone"):
             st.session_state.active_mood_category = mood_select
             st.success(f"Active mood: {mood_select}")
+    
     if st.button("Send") and user_input.strip():
         st.session_state.chat_history.append({"from":"user","text":user_input})
         reply = call_genai_api(user_input, tone_hint=st.session_state.active_mood_category)
         st.session_state.chat_history.append({"from":"bot","text":reply})
+    
     chat_html = '<div class="chat-container">'
     for item in st.session_state.chat_history:
         text = html.escape(item.get("text",""))
@@ -154,6 +251,4 @@ with tabs[3]:
     if st.session_state.mood_log: st.write(pd.DataFrame(st.session_state.mood_log))
 
 # ---------- Footer ----------
-st.html('<div class="footer">🔒 All conversations are end-to-end encrypted. Your privacy is 100% safe here.</div>')
-
-
+st.markdown('<div class="footer">🔒 All conversations are end-to-end encrypted. Your privacy is 100% safe here.</div>', unsafe_allow_html=True)
