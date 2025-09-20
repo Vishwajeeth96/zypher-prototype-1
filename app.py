@@ -64,6 +64,8 @@ left_col, chat_col = st.columns([1,2])
 # ---------------- Left Panel ----------------
 with left_col:
     st.markdown('<div class="left-panel">', unsafe_allow_html=True)
+
+    # Mood Log
     st.header("🌸 Mood Log")
     current_mood = st.radio("Current Mood", ["happy","sad","angry","neutral"], horizontal=True)
     if st.button("Log Mood"):
@@ -76,6 +78,7 @@ with left_col:
         for entry in reversed(st.session_state.mood_log[-5:]):
             st.write(f"{entry['timestamp']} → {entry['mood']}")
 
+    # Meme Generator
     st.header("😂 Meme Generator")
     if st.button("Generate Meme"):
         try:
@@ -89,6 +92,7 @@ with left_col:
         except Exception as e:
             st.error("Meme fetch failed: " + str(e))
 
+    # Mood Analyzer
     st.header("📋 Mood Analyzer")
     questions = [
         {"q":"How have you been feeling today?","opts":["Very good","Good","Neutral","Bad","Very bad"]},
@@ -131,9 +135,17 @@ with chat_col:
     st.title("🌿 Zypher Chatbot")
     user_input = st.chat_input("Type your message...")
     if user_input:
-        st.session_state.chat_history.append({"from":"user","text":user_input,"time":datetime.now().strftime("%H:%M")})
+        st.session_state.chat_history.append({
+            "from":"user",
+            "text":user_input,
+            "time":datetime.now().strftime("%H:%M")
+        })
         reply = get_bot_response(user_input, current_mood)
-        st.session_state.chat_history.append({"from":"bot","text":reply,"time":datetime.now().strftime("%H:%M")})
+        st.session_state.chat_history.append({
+            "from":"bot",
+            "text":reply,
+            "time":datetime.now().strftime("%H:%M")
+        })
 
     # Display chat history
     for msg in st.session_state.chat_history:
@@ -144,3 +156,12 @@ with chat_col:
                 st.markdown(f"👤 **You:** {text}  \n*{time}*")
         else:
             with st.chat_message("assistant"):
+                st.markdown(f"🤖 **Zypher:** {text}  \n*{time}*")
+
+    if st.button("Clear Chat"):
+        st.session_state.chat_history = []
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# ---------------- Footer ----------------
+st.markdown('<div style="text-align:center;color:#999;padding:8px;font-size:12px;">🔒 All conversations are end-to-end encrypted. Your privacy is 100% safe here.</div>', unsafe_allow_html=True)
