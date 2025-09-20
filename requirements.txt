@@ -1,5 +1,7 @@
-streamlit>=1.25.0
-pandas
-requests
-Pillow
-google-generativeai>=0.1.2
+import streamlit as st
+import streamlit.components.v1 as components
+import google.generativeai as genai
+import requests, random, html
+from datetime import datetime
+from io import BytesIO
+from PIL import Image
