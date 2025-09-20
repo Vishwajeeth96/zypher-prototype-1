@@ -1,5 +1,5 @@
 # app.py — Zypher • Youth Mental Wellness
-# Requirements: streamlit, pandas, requests, Pillow, google-generativeai
+# Requirements: streamlit, pandas, requests, Pillow
 # Save logo at: assets/team_zypher_logo_transparent.png
 # Run: pip install -r requirements.txt
 # streamlit run app.py
@@ -38,55 +38,30 @@ if "chat_history" not in st.session_state: st.session_state.chat_history = []
 if "mood_log" not in st.session_state: st.session_state.mood_log = []
 if "active_mood_category" not in st.session_state: st.session_state.active_mood_category = "okay"
 
-# ---------------- GenAI init ----------------
-def init_genai():
-    try:
-        import google.generativeai as genai
-    except:
-        return None, "GenAI library not installed."
-    api_key = st.secrets.get("GOOGLE_API_KEY", None)
-    if not api_key:
-        return None, "No Google API Key set in Streamlit Secrets."
-    try:
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        return model, None
-    except Exception as e:
-        return None, str(e)
-
-genai_model, genai_error = init_genai()
-
-# ---------------- Chat helper ----------------
+# ---------------- Fallback responses ----------------
 fallback_responses = {
-    "okay": [
-        "I hear you. How’s your day going?",
-        "Thanks for sharing! Want to talk about something positive today?"
-    ],
-    "funny": [
-        "Haha, that made me smile! 😄",
-        "Love your humor! Want to share another?"
-    ],
-    "traumatized": [
-        "I understand this is tough. Take your time and share what you feel safe sharing.",
-        "It’s okay to feel overwhelmed. I’m here to listen."
-    ],
-    "harassed": [
-        "I’m really sorry you’re feeling this way. Do you want to talk about it?",
-        "It’s understandable to feel stressed. I’m here with you."
-    ]
+    "okay": ["I hear you. How’s your day going?", "Thanks for sharing! Want to talk about something positive today?"],
+    "funny": ["Haha, that made me smile! 😄", "Love your humor! Want to share another?"],
+    "traumatized": ["I understand this is tough. Take your time and share what you feel safe sharing.", "It’s okay to feel overwhelmed. I’m here to listen."],
+    "harassed": ["I’m really sorry you’re feeling this way. Do you want to talk about it?", "It’s understandable to feel stressed. I’m here with you."]
 }
 
-def call_genai(prompt, tone_hint="empathetic"):
-    if genai_model:
-        try:
-            full_prompt = f"You are Zypher, an empathetic youth wellness bot. Tone: {tone_hint}.\nUser: {prompt}\nAssistant:"
-            resp = genai_model.generate_content(full_prompt)
-            return getattr(resp, "text", str(resp))
-        except:
-            pass
-    # fallback
-    responses = fallback_responses.get(tone_hint, ["I'm here to listen. Tell me more."])
-    return random.choice(responses)
+# ---------------- Call Gen AI API ----------------
+def call_genai_api(user_input, tone_hint="okay"):
+    api_key = st.secrets["genai"]["api_key"]
+    url = "https://api.genai.example.com/v1/generate"  # Replace with your real API endpoint
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    payload = {"prompt": f"Tone: {tone_hint}. User: {user_input}\nAssistant:", "max_tokens": 150}
+    try:
+        resp = requests.post(url, headers=headers, json=payload, timeout=10)
+        if resp.status_code == 200:
+            text = resp.json().get("text", "").strip()
+            if text:
+                return text
+    except:
+        pass
+    # Fallback if API fails
+    return random.choice(fallback_responses.get(tone_hint, ["I'm here to listen. Tell me more."]))
 
 # ---------------- UI ----------------
 st.html('<div class="container"></div>')
@@ -110,9 +85,8 @@ with tabs[0]:
             st.success(f"Active mood: {mood_select}")
     if st.button("Send") and user_input.strip():
         st.session_state.chat_history.append({"from":"user","text":user_input})
-        reply = call_genai(user_input, tone_hint=st.session_state.active_mood_category)
+        reply = call_genai_api(user_input, tone_hint=st.session_state.active_mood_category)
         st.session_state.chat_history.append({"from":"bot","text":reply})
-    # Display chat (scroll down)
     chat_html = '<div class="chat-container">'
     for item in st.session_state.chat_history:
         text = html.escape(item.get("text",""))
