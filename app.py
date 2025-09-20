@@ -49,11 +49,21 @@ def get_bot_response(user_input, mood="neutral"):
     except:
         return random.choice(fallback_responses.get(mood, ["I’m here for you. 💙"]))
 
+# ---------------- Custom CSS for Panel Colors ----------------
+st.markdown("""
+<style>
+.left-panel {background-color:#1e1e1e;padding:15px;border-radius:8px;color:#e0e0e0;}
+.right-panel {background-color:#f5f5f5;padding:15px;border-radius:8px;}
+.stRadio > label {color:#e0e0e0;}
+</style>
+""", unsafe_allow_html=True)
+
 # ---------------- Layout Columns ----------------
 left_col, chat_col = st.columns([1,2])
 
-# ---------------- Left Panel: Mood Log, Meme, Analyzer ----------------
+# ---------------- Left Panel ----------------
 with left_col:
+    st.markdown('<div class="left-panel">', unsafe_allow_html=True)
     st.header("🌸 Mood Log")
     current_mood = st.radio("Current Mood", ["happy","sad","angry","neutral"], horizontal=True)
     if st.button("Log Mood"):
@@ -113,8 +123,11 @@ with left_col:
             current_mood = suggested
             st.success(f"Applied mood `{suggested}` to chat.")
 
+    st.markdown('</div>', unsafe_allow_html=True)
+
 # ---------------- Chat Column ----------------
 with chat_col:
+    st.markdown('<div class="right-panel">', unsafe_allow_html=True)
     st.title("🌿 Zypher Chatbot")
     user_input = st.chat_input("Type your message...")
     if user_input:
@@ -131,10 +144,3 @@ with chat_col:
                 st.markdown(f"👤 **You:** {text}  \n*{time}*")
         else:
             with st.chat_message("assistant"):
-                st.markdown(f"🤖 **Zypher:** {text}  \n*{time}*")
-
-    if st.button("Clear Chat"):
-        st.session_state.chat_history = []
-
-# ---------------- Footer ----------------
-st.markdown('<div style="text-align:center;color:#999;padding:8px;font-size:12px;">🔒 All conversations are end-to-end encrypted. Your privacy is 100% safe here.</div>', unsafe_allow_html=True)
