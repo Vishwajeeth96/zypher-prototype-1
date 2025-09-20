@@ -9,21 +9,19 @@ from io import BytesIO
 from PIL import Image
 import html
 
-# ---------------- Page config ----------------
+# ---------------- Page Config ----------------
 st.set_page_config(page_title="Zypher • Youth Mental Wellness", layout="wide", page_icon="💬")
 
-# ---------------- CSS for Fancy UI ----------------
+# ---------------- CSS for ChatGPT-like UI ----------------
 st.markdown("""
 <style>
-:root {
-  --bg1: #0d0d0d; --bg2: #1a0033; --accent: #ff00ff; --secondary: #8A2BE2; --muted: #e0e0e0;
-}
-body {background: linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--muted);font-family:'Helvetica',sans-serif;}
-.chat-container {display:flex;flex-direction:column;gap:10px;max-height:500px;overflow-y:auto;padding:15px;border-radius:12px;background:rgba(255,255,255,0.05);}
-.user-bubble {background: rgba(255,255,255,0.1); color: var(--muted); padding:10px 15px; border-radius:12px 12px 0 12px; max-width:75%; align-self:flex-start; box-shadow:0 0 8px rgba(255,255,255,0.2);}
-.bot-bubble {background: linear-gradient(90deg,var(--accent),var(--secondary)); color:#fff; padding:10px 15px; border-radius:12px 12px 12px 0; max-width:75%; align-self:flex-end; font-weight:600; text-shadow:0 0 5px #ff00ff,0 0 15px #ff00ff;}
-.bot-bubble::before {content:"🤖 "; margin-right:5px;}
-.stButton>button{background:linear-gradient(90deg,var(--accent),var(--secondary));color:#fff;font-weight:700;border-radius:10px;padding:8px 12px;}
+body {background:#f5f5f5; font-family:'Helvetica',sans-serif;}
+.chat-container {display:flex;flex-direction:column;gap:8px;max-height:500px;overflow-y:auto;padding:10px;background:#fff;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+.user-bubble {background:#dcf8c6; color:#000; padding:10px 15px; border-radius:18px 18px 0 18px; align-self:flex-end; max-width:70%;}
+.bot-bubble {background:#ececec; color:#000; padding:10px 15px; border-radius:18px 18px 18px 0; align-self:flex-start; max-width:70%; display:flex; align-items:center; gap:8px;}
+.bot-avatar {font-size:20px;}
+.timestamp {font-size:10px; color:#555; margin-top:2px;}
+.stButton>button{background:#8A2BE2;color:#fff;font-weight:700;border-radius:10px;padding:8px 12px;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -62,7 +60,7 @@ def call_genai(prompt, mood):
 # ---------------- Layout ----------------
 left_col, center_col = st.columns([2,4])
 
-# --------- Left Column (Mood Log + Meme Generator) ---------
+# --------- Left Column: Mood Log + Meme Generator ---------
 with left_col:
     st.subheader("🌸 Mood Log")
     current_mood = st.selectbox("Select Mood", ["😊 Happy","😔 Sad","😡 Angry","😴 Tired","😎 Chill"])
@@ -87,22 +85,25 @@ with left_col:
         except Exception as e:
             st.error("Meme fetch failed: " + str(e))
 
-# --------- Center Column (Chat) ---------
+# --------- Center Column: Chat ---------
 with center_col:
     st.subheader("💬 Zypher Chat")
     user_input = st.text_input("Type your message here...", key="chat_input")
     if st.button("Send") and user_input.strip():
-        st.session_state.chat_history.append({"from":"user","text":user_input})
+        timestamp = datetime.now().strftime("%H:%M")
+        st.session_state.chat_history.append({"from":"user","text":user_input,"time":timestamp})
         reply = call_genai(user_input, st.session_state.active_mood)
-        st.session_state.chat_history.append({"from":"bot","text":reply})
+        reply_time = datetime.now().strftime("%H:%M")
+        st.session_state.chat_history.append({"from":"bot","text":reply,"time":reply_time})
 
     chat_html = '<div class="chat-container">'
     for item in st.session_state.chat_history:
         text = html.escape(item.get("text",""))
+        time = item.get("time","")
         if item.get("from")=="user":
-            chat_html += f'<div class="user-bubble">{text}</div>'
+            chat_html += f'<div class="user-bubble">{text}<div class="timestamp">{time}</div></div>'
         else:
-            chat_html += f'<div class="bot-bubble">{text}</div>'
+            chat_html += f'<div class="bot-bubble"><span class="bot-avatar">🤖</span>{text}<div class="timestamp">{time}</div></div>'
     chat_html += '</div>'
     st.markdown(chat_html, unsafe_allow_html=True)
     if st.button("Clear Chat"): st.session_state.chat_history = []
