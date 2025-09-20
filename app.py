@@ -1,143 +1,116 @@
-import os
-import random
-from datetime import datetime
+# app.py — Zypher • Youth Mental Wellness
+# Requirements: streamlit, google-generativeai
+
 import streamlit as st
 import google.generativeai as genai
+from datetime import datetime
+import random
 
-# ---------------- Page Config ----------------
-st.set_page_config(page_title="Zypher • Youth Mental Wellness", page_icon="💬", layout="wide")
+# ---------------------------
+# Configure page
+# ---------------------------
+st.set_page_config(
+    page_title="Zypher - Youth Mental Wellness",
+    page_icon="🌿",
+    layout="wide",
+)
 
-# ---------------- CSS for Fancy UI ----------------
-st.markdown("""
-<style>
-:root {
-  --bg1: #0d0d0d;
-  --bg2: #1a0033;
-  --accent: #ff00ff;
-  --secondary: #8A2BE2;
-  --muted: #e0e0e0;
-}
-body {
-  background: linear-gradient(180deg, var(--bg1), var(--bg2));
-  color: var(--muted);
-  font-family: 'Helvetica', sans-serif;
-}
-.chat-container {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-height: 500px;
-  overflow-y: auto;
-  padding: 15px;
-  border-radius: 12px;
-  background: rgba(255,255,255,0.05);
-}
-.user-bubble {
-  background: rgba(255,255,255,0.1);
-  color: var(--muted);
-  padding: 10px 15px;
-  border-radius: 12px 12px 0 12px;
-  max-width: 75%;
-  align-self: flex-start;
-  box-shadow: 0 0 8px rgba(255,255,255,0.2);
-}
-.bot-bubble {
-  background: linear-gradient(90deg, var(--accent), var(--secondary));
-  color: #fff;
-  padding: 10px 15px;
-  border-radius: 12px 12px 12px 0;
-  max-width: 75%;
-  align-self: flex-end;
-  font-weight: 600;
-  text-shadow: 0 0 5px #ff00ff, 0 0 15px #ff00ff;
-}
-</style>
-""", unsafe_allow_html=True)
+# ---------------------------
+# Load Gemini API Key
+# ---------------------------
+api_key = st.secrets.get("GEMINI_API_KEY", None)
+if api_key:
+    genai.configure(api_key=api_key)
+else:
+    st.sidebar.error("⚠️ Gemini API key not found in secrets!")
+    st.stop()
 
-# ---------------- Gemini Setup ----------------
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-model = genai.GenerativeModel("gemini-pro")
-
-# ---------------- Fallback Responses ----------------
+# ---------------------------
+# Fallback Responses (if API fails)
+# ---------------------------
 fallback_responses = {
     "happy": [
-        "🌟 That’s amazing!", "😄 Keep smiling!", "✨ Your happiness is contagious!"
+        "That’s amazing! 🌸 Keep shining today!",
+        "I’m really glad you’re feeling good. ✨",
+        "Happiness looks good on you! 💖",
     ],
     "sad": [
-        "💙 I hear you.", "🤗 Sending a hug.", "It’s okay to feel this way."
+        "I hear you 💙, tough times don’t last forever.",
+        "It’s okay to not feel okay sometimes 🌧️.",
+        "Sending you a virtual hug 🤗.",
     ],
     "angry": [
-        "😌 Take a breath.", "I understand your frustration.", "It’s okay to vent."
+        "Take a deep breath 🧘, I’m here for you.",
+        "It’s okay to let it out 💢.",
+        "Want to try calming down with a quick exercise?",
     ],
-    "traumatized": [
-        "💔 That must be heavy.", "💙 You’re not alone.", "Take it step by step..."
+    "neutral": [
+        "Got it. I’m listening 👂.",
+        "I understand. Tell me more…",
+        "Thanks for sharing that with me 💭.",
     ],
-    "okay": [
-        "👍 Balanced and calm.", "🌱 Neutral is good.", "Glad you’re steady."
-    ],
-    "default": [
-        "❤️ I’m here for you.", "Tell me more...", "How do you feel about that?"
-    ]
 }
 
-# ---------------- Session State ----------------
-if "messages" not in st.session_state:
-    st.session_state["messages"] = []
+# ---------------------------
+# Initialize session state
+# ---------------------------
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
-if "mood_logs" not in st.session_state:
-    st.session_state["mood_logs"] = []
+if "mood_log" not in st.session_state:
+    st.session_state.mood_log = []
 
-if "active_mood" not in st.session_state:
-    st.session_state["active_mood"] = "default"
-
-# ---------------- Sidebar ----------------
-with st.sidebar:
-    st.title("💬 Zypher AI")
-    st.caption("Youth Mental Wellness Chatbot")
-
-    # Mood selector
-    mood = st.radio(
-        "How are you feeling?",
-        ["happy", "sad", "angry", "traumatized", "okay", "default"],
-        index=["happy","sad","angry","traumatized","okay","default"].index(st.session_state["active_mood"])
-    )
-    st.session_state["active_mood"] = mood
-
-    # Log mood with timestamp
-    if not st.session_state["mood_logs"] or st.session_state["mood_logs"][-1]["mood"] != mood:
-        st.session_state["mood_logs"].append({
-            "mood": mood,
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        })
-
-    st.subheader("🕒 Mood Log")
-    for log in st.session_state["mood_logs"]:
-        st.write(f"{log['timestamp']} — **{log['mood']}**")
-
-    if st.button("Clear Chat"):
-        st.session_state["messages"] = []
-        st.success("Chat history cleared ✅")
-
-# ---------------- Main Chat ----------------
-st.title("🌱 Zypher Wellness Chat")
-chat_html = '<div class="chat-container">'
-for msg in st.session_state["messages"]:
-    if msg["role"] == "user":
-        chat_html += f'<div class="user-bubble">{msg["content"]}</div>'
-    else:
-        chat_html += f'<div class="bot-bubble">{msg["content"]}</div>'
-chat_html += "</div>"
-st.markdown(chat_html, unsafe_allow_html=True)
-
-# ---------------- Chat Input ----------------
-if user_input := st.chat_input("Type your message..."):
-    st.session_state["messages"].append({"role": "user", "content": user_input})
-
+# ---------------------------
+# Chatbot response function
+# ---------------------------
+def get_bot_response(user_input, mood="neutral"):
     try:
+        model = genai.GenerativeModel("gemini-1.5-flash")
         response = model.generate_content(user_input)
-        reply = response.text
-    except Exception:
-        reply = random.choice(fallback_responses.get(st.session_state["active_mood"], fallback_responses["default"]))
+        return response.text
+    except Exception as e:
+        # Use fallback response
+        return random.choice(fallback_responses.get(mood, ["I’m here for you. 💙"]))
 
-    st.session_state["messages"].append({"role": "bot", "content": reply})
-    st.experimental_rerun()
+# ---------------------------
+# Sidebar - Mood logging
+# ---------------------------
+with st.sidebar:
+    st.header("🌸 Mood Log")
+    current_mood = st.radio(
+        "How are you feeling?",
+        ["happy", "sad", "angry", "neutral"],
+        horizontal=True,
+    )
+    if st.button("Log Mood"):
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        st.session_state.mood_log.append((current_mood, timestamp))
+        st.success(f"Mood '{current_mood}' logged at {timestamp}")
+
+    if st.session_state.mood_log:
+        st.subheader("📅 Previous Entries")
+        for mood, ts in reversed(st.session_state.mood_log[-5:]):
+            st.write(f"{ts} → {mood}")
+
+# ---------------------------
+# Main Chat Interface
+# ---------------------------
+st.title("🌿 Zypher — Youth Mental Wellness Chatbot")
+
+user_input = st.chat_input("Type your message...")
+if user_input:
+    # Save user input
+    st.session_state.chat_history.append(("user", user_input))
+
+    # Generate bot response
+    bot_reply = get_bot_response(user_input, current_mood)
+    st.session_state.chat_history.append(("bot", bot_reply))
+
+# Display chat history
+for role, text in st.session_state.chat_history:
+    if role == "user":
+        with st.chat_message("user"):
+            st.markdown(f"👤 **You:** {text}")
+    else:
+        with st.chat_message("assistant"):
+            st.markdown(f"🤖 **Zypher:** {text}")
