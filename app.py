@@ -58,10 +58,11 @@ st.markdown("""
     overflow-y:auto;
 }
 .right-panel {
-    background-color:#f8f9fa;
+    background-color:#f0f3f6;
     padding:15px;
     border-radius:8px;
     height:90vh;
+    overflow-y:auto;
 }
 .stRadio > label {color:#c9d1d9;}
 .stButton>button {
@@ -71,6 +72,7 @@ st.markdown("""
     border-radius: 8px;
     padding:6px 12px;
 }
+h1, h2, h3 {margin:5px 0;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -148,7 +150,7 @@ with left_col:
 # ---------------- Chat Column ----------------
 with chat_col:
     st.markdown('<div class="right-panel">', unsafe_allow_html=True)
-    st.title("🌿 Zypher Chatbot")
+    st.header("🌿 Zypher Chatbot")  # Removed extra white box
     user_input = st.chat_input("Type your message...")
     if user_input:
         st.session_state.chat_history.append({
