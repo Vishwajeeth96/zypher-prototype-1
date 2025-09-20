@@ -1,5 +1,4 @@
-
-        # app.py — Zypher • Youth Mental Wellness
+# app.py — Zypher • Youth Mental Wellness
 # Requirements: streamlit, pandas, requests, Pillow, google-generativeai
 # Save logo (optional) at: assets/team_zypher_logo_transparent.png
 # Run: pip install -r requirements.txt
@@ -81,6 +80,14 @@ st.markdown(
         padding: 8px 12px;
       }
       .footer { color: #999; text-align:center; padding:8px; font-size:12px; opacity:0.8; }
+      .warning-box {
+        background: rgba(255,0,0,0.2);
+        color: #ffcccc;
+        padding: 10px;
+        border-radius: 8px;
+        margin: 10px 0;
+        text-align: center;
+      }
     </style>
     """,
     unsafe_allow_html=True,
@@ -99,11 +106,11 @@ def init_genai():
     try:
         import google.generativeai as genai
     except:
-        return None, "genai-not-installed"
+        return None, "GenAI library not installed."
 
     api_key = st.secrets.get("GOOGLE_API_KEY", None)
     if not api_key:
-        return None, "no-api-key"
+        return None, "No Google API Key set in Streamlit Secrets."
 
     try:
         genai.configure(api_key=api_key)
@@ -116,7 +123,7 @@ genai_model, genai_error = init_genai()
 
 def call_genai(prompt, tone_hint="empathetic"):
     if not genai_model:
-        return f"⚠️ GenAI unavailable: {genai_error}"
+        return f"⚠️ GenAI unavailable: {genai_error}\nPlease set your GOOGLE_API_KEY in Streamlit Secrets."
     full_prompt = f"You are Zypher, an empathetic youth wellness bot. Tone: {tone_hint}.\nUser: {prompt}\nAssistant:"
     resp = genai_model.generate_content(full_prompt)
     return getattr(resp, "text", str(resp))
@@ -174,6 +181,10 @@ with tabs[0]:
         """,
         unsafe_allow_html=True
     )
+
+    # Friendly warning if no API key
+    if not genai_model:
+        st.markdown(f"<div class='warning-box'>⚠️ GenAI unavailable: {genai_error}<br>Set your GOOGLE_API_KEY in Streamlit Secrets to enable chatbot responses.</div>", unsafe_allow_html=True)
 
 # ---------- Mood Analyzer ----------
 with tabs[1]:
