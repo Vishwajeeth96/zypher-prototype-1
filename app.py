@@ -1,68 +1,68 @@
-python
-# ... (keep your imports and initial setup)
+# app.py — Zypher • Youth Mental Wellness Chatbot
+
+import streamlit as st
+import streamlit.components.v1 as components
+import google.generativeai as genai
+import requests, random, html
+from datetime import datetime
+from io import BytesIO
+from PIL import Image
 
 # 1) PAGE SETUP
 st.set_page_config(page_title="Zypher AI Bot", page_icon="🌿", layout="wide")
 
-# Updated CSS for chat bubbles and layout box
+# Hide Streamlit header/menu/footer and top padding
 st.markdown("""
 <style>
   #MainMenu, header, footer { visibility: hidden !important; }
   .block-container { padding-top:0 !important; }
-
-  /* Left panel box */
-  .left-panel-box {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 1rem;
-    background: #f9f9f9;
-    height: 100%;
-  }
-
-  /* Chat bubbles */
   .user-bubble, .bot-bubble {
-    margin: 0.5rem 0; padding: 0.75rem 1rem; max-width: 70%; line-height: 1.4;
-    border-radius: 1rem;
-    font-size: 1rem;
-    display: inline-block;
-    word-wrap: break-word;
+    margin:0.5rem 0; padding:0.5rem 1rem; max-width:75%; display:inline-block;
+    line-height:1.4;
   }
   .user-bubble {
-    background: #DCF8C6; /* WhatsApp style green */
-    color: #000;
-    border-bottom-right-radius: 0;
-    float: right;
-    clear: both;
+    background:#e1f5fe; border-radius:1rem 1rem 0.5rem 1rem;
   }
   .bot-bubble {
-    background: #E5E5EA; /* light gray */
-    color: #000;
-    border-bottom-left-radius: 0;
-    float: left;
-    clear: both;
+    background:#c8e6c9; border-radius:1rem 1rem 1rem 0.5rem;
   }
   .timestamp {
-    display: block; font-size: 0.65rem; color: #666; margin-top: 0.2rem;
+    display:block; font-size:0.7rem; color:#555; margin-top:0.2rem;
   }
-  h1, h2, h3 { margin-top: 0.2rem; margin-bottom: 0.5rem; }
-
-  /* Clear floats after chat bubbles */
-  .chat-message {
-    overflow: auto;
-    margin-bottom: 0.5rem;
-  }
+  h1, h2, h3 { margin-top:0.2rem; margin-bottom:0.5rem; }
 </style>
 """, unsafe_allow_html=True)
 
-# ... (keep your Gemini API and session state code)
+# 2) GEMINI API
+api_key = st.secrets.get("GEMINI_API_KEY", "")
+if not api_key:
+    st.error("⚠️ GEMINI_API_KEY not found in Secrets!")
+    st.stop()
+genai.configure(api_key=api_key)
 
-# 5) LAYOUT: TWO COLUMNS, equal width
-left_col, right_col = st.columns([1, 1], gap="medium")
+# 3) SESSION STATE
+st.session_state.setdefault("mood_log", [])
+st.session_state.setdefault("chat_history", [])
 
-# --- LEFT PANEL: Mood Log / Meme / Analyzer inside a box
+# 4) FALLBACKS & BOT HELPER
+fallbacks = {
+    "happy":   ["That’s amazing! 🌸","Keep shining! ✨","Happiness suits you! 💖"],
+    "sad":     ["I hear you 💙","It’s okay to not feel okay 🌧️","Sending a hug 🤗"],
+    "angry":   ["Breathe in… breathe out 🧘","It’s okay to vent 💢","Need a calming tip?"],
+    "neutral": ["I’m listening 👂","Tell me more…","Thanks for sharing 💭"]
+}
+def get_bot_response(text, mood="neutral"):
+    try:
+        mdl = genai.GenerativeModel("gemini-1.5-flash")
+        return mdl.generate_content(text).text.strip()
+    except:
+        return random.choice(fallbacks.get(mood, ["I’m here for you. 💙"]))
+
+# 5) LAYOUT: TWO COLUMNS, FLUSH TOP
+left_col, right_col = st.columns([1, 2], gap="small")
+
+# --- LEFT PANEL: Mood Log / Meme / Analyzer
 with left_col:
-    st.markdown('<div class="left-panel-box">', unsafe_allow_html=True)
-
     st.header("🌸 Mood Log")
     current_mood = st.radio("Select mood", ["happy","sad","angry","neutral"], horizontal=True, index=3)
     if st.button("Log Mood"):
@@ -84,7 +84,7 @@ with left_col:
             url, cap = m.get("url"), m.get("title","")
             if url:
                 img = Image.open(BytesIO(requests.get(url).content))
-                st.image(img, caption=cap, use_container_width=True)  # fixed here
+                st.image(img, caption=cap, use_column_width=True)
             else:
                 st.warning("No meme right now.")
         except:
@@ -113,13 +113,11 @@ with left_col:
         elif avg>=1.5: analysis, tone = "Stressed or Negative","sad"
         else:           analysis, tone = "Very Negative or Upset","angry"
 
-        st.markdown(f"*Avg. Score:* {avg:.2f}")
+        st.markdown(f"**Avg. Score:** {avg:.2f}")
         st.info(f"Analysis: {analysis}")
         if st.button("Apply Suggested Tone"):
             current_mood = tone
             st.success(f"Chat tone set to {tone}")
-
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # --- RIGHT PANEL: Chatbot
 with right_col:
@@ -132,8 +130,8 @@ with right_col:
             ts  = msg.get("timestamp","")
             cls = "user-bubble" if msg.get("from")=="user" else "bot-bubble"
             st.markdown(
-                f'<div class="chat-message"><div class="{cls}">{txt}'
-                f'<span class="timestamp">{ts}</span></div></div>',
+                f'<div class="{cls}">{txt}'
+                f'<span class="timestamp">{ts}</span></div>',
                 unsafe_allow_html=True
             )
         # anchor for scrolling
