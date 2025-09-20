@@ -52,14 +52,14 @@ def get_bot_response(user_input, mood="neutral"):
 # ---------------- Custom CSS for Panel Colors ----------------
 st.markdown("""
 <style>
-.left-panel {background-color:#1e1e1e;padding:15px;border-radius:8px;color:#e0e0e0;}
+.left-panel {background-color:#121212;padding:15px;border-radius:8px;color:#e0e0e0; height:100%;}
 .right-panel {background-color:#f5f5f5;padding:15px;border-radius:8px;}
 .stRadio > label {color:#e0e0e0;}
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------- Layout Columns ----------------
-left_col, chat_col = st.columns([1,2])
+left_col, chat_col = st.columns([0.8,2.2])  # smaller left panel, larger right panel
 
 # ---------------- Left Panel ----------------
 with left_col:
@@ -132,6 +132,8 @@ with left_col:
 # ---------------- Chat Column ----------------
 with chat_col:
     st.markdown('<div class="right-panel">', unsafe_allow_html=True)
+    st.markdown("<div style='margin-top:20px;'>", unsafe_allow_html=True)  # start chat a bit lower
+
     st.title("🌿 Zypher Chatbot")
     user_input = st.chat_input("Type your message...")
     if user_input:
@@ -162,6 +164,8 @@ with chat_col:
         st.session_state.chat_history = []
 
     st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------- Footer ----------------
 st.markdown('<div style="text-align:center;color:#999;padding:8px;font-size:12px;">🔒 All conversations are end-to-end encrypted. Your privacy is 100% safe here.</div>', unsafe_allow_html=True)
+
