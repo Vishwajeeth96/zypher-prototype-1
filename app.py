@@ -5,8 +5,8 @@
 # streamlit run app.py
 
 import os
-import random
 import html
+import random
 from io import BytesIO
 
 import streamlit as st
@@ -26,10 +26,10 @@ st.markdown(
     """
     <style>
       :root {
-        --bg1: #1e003f;  /* deep purple */
-        --bg2: #2c0052;
-        --accent: #8A2BE2; /* electric violet */
-        --neon: #FF69B4; /* neon pink */
+        --bg1: #0d0d0d;  /* dark background */
+        --bg2: #1a0033;
+        --accent: #39ff14; /* neon green */
+        --secondary: #8A2BE2; /* violet */
         --muted: #e0e0e0;
       }
       body {
@@ -41,41 +41,39 @@ st.markdown(
         background: rgba(255,255,255,0.03);
         padding: 20px;
         border-radius: 15px;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.7);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.7);
       }
       h1, h2, h3 { color: var(--accent); text-align:center; margin: 5px 0; }
       .user-bubble {
-        background: linear-gradient(90deg, var(--neon), var(--accent));
-        color: #1e003f;
-        padding: 12px 16px;
-        border-radius: 14px 14px 4px 14px;
-        margin: 6px 0;
-        max-width: 75%;
-        float: right;
-        clear: both;
-        font-weight:600;
-      }
-      .bot-bubble {
-        background: rgba(255,255,255,0.05);
+        background: rgba(255,255,255,0.08);
         color: var(--muted);
         padding: 12px 16px;
-        border-radius: 14px 14px 14px 4px;
+        border-radius: 14px 14px 4px 14px;
         margin: 6px 0;
         max-width: 75%;
         float: left;
         clear: both;
       }
+      .bot-bubble {
+        background: linear-gradient(90deg, var(--accent), var(--secondary));
+        color: #0d0d0d;
+        padding: 12px 16px;
+        border-radius: 14px 14px 14px 4px;
+        margin: 6px 0;
+        max-width: 75%;
+        float: right;
+        clear: both;
+        font-weight: 600;
+      }
       .chat-container::after { content: ""; display: table; clear: both; }
       .stButton>button {
-        background: linear-gradient(90deg, var(--accent), var(--neon));
+        background: linear-gradient(90deg, var(--accent), var(--secondary));
         color: #fff;
         font-weight: 700;
         border-radius: 10px;
         padding: 8px 12px;
       }
-      .footer { color: #dda0dd; text-align:center; padding:8px; font-size:12px; opacity:0.8; }
-      .stFileUploader > div { background: rgba(255,255,255,0.01); border-radius:8px; padding:6px; }
-      .tab-card { background: rgba(255,255,255,0.03); padding:15px; border-radius:12px; margin:10px 0; }
+      .footer { color: #999; text-align:center; padding:8px; font-size:12px; opacity:0.8; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -88,8 +86,6 @@ if "mood_log" not in st.session_state:
     st.session_state.mood_log = []
 if "active_mood_category" not in st.session_state:
     st.session_state.active_mood_category = "okay"
-if "use_ai" not in st.session_state:
-    st.session_state.use_ai = True
 
 # ---------------- GenAI init ----------------
 def init_genai():
@@ -98,11 +94,7 @@ def init_genai():
     except:
         return None, "genai-not-installed"
 
-    api_key = st.secrets.get("GENAI_API_KEY", None)
-    if not api_key:
-        pasted = st.sidebar.text_input("Paste GenAI key (dev only)", type="password")
-        if pasted:
-            api_key = pasted
+    api_key = st.secrets.get("GOOGLE_API_KEY", None)
     if not api_key:
         return None, "no-api-key"
 
@@ -125,7 +117,7 @@ def call_genai(prompt, tone_hint="empathetic"):
 # ---------------- UI ----------------
 st.markdown('<div class="container">', unsafe_allow_html=True)
 
-# logo
+# Logo
 if os.path.exists(LOGO_PATH):
     st.image(LOGO_PATH, width=160)
 
@@ -136,12 +128,13 @@ tabs = st.tabs(["Chat", "Mood Analyzer", "Memes", "Mood Log"])
 
 # ---------- Chat ----------
 with tabs[0]:
-    st.subheader("💬 Talk to ZypherBot")
+    st.subheader("💬 Talk to ZypherBot (Safe & Encrypted)")
+    user_input = st.text_input("Say something...", key="chat_input")
+
     col1, col2 = st.columns([4,1])
-    with col1:
-        user_input = st.text_input("Say something...", key="chat_input")
     with col2:
-        mood_select = st.selectbox("Bot Tone", ["harassed","traumatized","funny","okay"], index=["harassed","traumatized","funny","okay"].index(st.session_state.active_mood_category))
+        mood_select = st.selectbox("Bot Tone", ["harassed","traumatized","funny","okay"], 
+                                   index=["harassed","traumatized","funny","okay"].index(st.session_state.active_mood_category))
         if st.button("Apply Mood Tone"):
             st.session_state.active_mood_category = mood_select
             st.success(f"Active mood: {mood_select}")
@@ -154,6 +147,7 @@ with tabs[0]:
         else:
             st.warning("Type something first!")
 
+    # Display chat
     st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
     for item in st.session_state.chat_history[::-1]:
         text = html.escape(item.get("text",""))
@@ -232,6 +226,5 @@ with tabs[3]:
     if st.session_state.mood_log:
         st.write(pd.DataFrame(st.session_state.mood_log))
 
-
-
-       
+# ---------- Footer ----------
+st.markdown("<div class='footer'>🔒 All conversations are end-to-end encrypted. Your privacy is 100% safe here.</div>", unsafe_allow_html=True)
