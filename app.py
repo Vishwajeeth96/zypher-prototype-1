@@ -1,8 +1,16 @@
 # app.py — Zypher • Youth Mental Wellness Chatbot
 
 import streamlit as st
-import streamlit.components.v1 as components
 import google.generativeai as genai
+
+# Initialize Gemini
+api_key = st.secrets.get("GEMINI_API_KEY", None)
+if api_key:
+    genai.configure(api_key=api_key)
+else:
+    st.error("⚠️ GEMINI_API_KEY not found! Please add it to secrets.toml")
+    st.stop()
+
 import requests, random, html
 from datetime import datetime
 from io import BytesIO
