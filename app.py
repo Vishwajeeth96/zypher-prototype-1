@@ -22,6 +22,7 @@ body {background: linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--mute
 .chat-container {display:flex;flex-direction:column;gap:10px;max-height:500px;overflow-y:auto;padding:15px;border-radius:12px;background:rgba(255,255,255,0.05);}
 .user-bubble {background: rgba(255,255,255,0.1); color: var(--muted); padding:10px 15px; border-radius:12px 12px 0 12px; max-width:75%; align-self:flex-start; box-shadow:0 0 8px rgba(255,255,255,0.2);}
 .bot-bubble {background: linear-gradient(90deg,var(--accent),var(--secondary)); color:#fff; padding:10px 15px; border-radius:12px 12px 12px 0; max-width:75%; align-self:flex-end; font-weight:600; text-shadow:0 0 5px #ff00ff,0 0 15px #ff00ff;}
+.bot-bubble::before {content:"🤖 "; margin-right:5px;}
 .stButton>button{background:linear-gradient(90deg,var(--accent),var(--secondary));color:#fff;font-weight:700;border-radius:10px;padding:8px 12px;}
 </style>
 """, unsafe_allow_html=True)
@@ -58,72 +59,22 @@ def call_genai(prompt, mood):
     except:
         return random.choice(fallback_responses.get(mood, fallback_responses["default"]))
 
-# ---------------- UI Tabs ----------------
-tabs = st.tabs(["Chat", "Mood Analyzer", "Meme Generator", "Mood Log"])
+# ---------------- Layout ----------------
+left_col, center_col = st.columns([2,4])
 
-# ---------- Chat ----------
-with tabs[0]:
-    st.subheader("💬 Talk to ZypherBot (Safe & Encrypted)")
-    col1, col2 = st.columns([4,1])
-    with col2:
-        mood_select = st.selectbox("Bot Tone", ["harassed","traumatized","funny","okay"], 
-                                   index=["harassed","traumatized","funny","okay"].index(st.session_state.active_mood))
-        if st.button("Apply Mood Tone"):
-            st.session_state.active_mood = mood_select
-            st.success(f"Active mood: {mood_select}")
+# --------- Left Column (Mood Log + Meme Generator) ---------
+with left_col:
+    st.subheader("🌸 Mood Log")
+    current_mood = st.selectbox("Select Mood", ["😊 Happy","😔 Sad","😡 Angry","😴 Tired","😎 Chill"])
+    if st.button("Log Mood"):
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        st.session_state.mood_log.append({"mood":current_mood, "timestamp":timestamp})
+        st.success(f"Mood logged at {timestamp}")
+    if st.session_state.mood_log:
+        st.write("📅 Last Entries")
+        for entry in reversed(st.session_state.mood_log[-5:]):
+            st.write(f"{entry['timestamp']} → {entry['mood']}")
 
-    user_input = st.text_input("Say something...", key="chat_input")
-    if st.button("Send") and user_input.strip():
-        st.session_state.chat_history.append({"from":"user","text":user_input})
-        reply = call_genai(user_input, mood_select)
-        st.session_state.chat_history.append({"from":"bot","text":reply})
-
-    chat_html = '<div class="chat-container">'
-    for item in st.session_state.chat_history:
-        text = html.escape(item.get("text",""))
-        if item.get("from")=="user": chat_html += f'<div class="user-bubble">{text}</div>'
-        else: chat_html += f'<div class="bot-bubble">{text}</div>'
-    chat_html += '</div>'
-    st.markdown(chat_html, unsafe_allow_html=True)
-    if st.button("Clear Chat"): st.session_state.chat_history = []
-
-# ---------- Mood Analyzer ----------
-with tabs[1]:
-    st.subheader("📋 Mood Analyzer")
-    questions = [
-        {"q":"How have you been feeling today?","opts":["Very good","Good","Neutral","Bad","Very bad"]},
-        {"q":"How motivated are you?","opts":["Very motivated","Somewhat motivated","Neutral","Little motivated","Not motivated at all"]},
-        {"q":"How well did you sleep?","opts":["Very well","Well","Average","Poorly","Very poorly"]},
-        {"q":"Rate your stress level:","opts":["Very low","Low","Moderate","High","Very high"]},
-        {"q":"Connected with others recently?","opts":["Very connected","Somewhat connected","Neutral","Somewhat disconnected","Very disconnected"]}
-    ]
-    with st.form("mood_form"):
-        answers=[]
-        for i,qq in enumerate(questions):
-            answers.append(st.radio(qq["q"], qq["opts"], index=2, key=f"q{i}"))
-        submit = st.form_submit_button("Analyze Mood")
-    if submit:
-        score_map = {"Very good":5,"Good":4,"Neutral":3,"Bad":2,"Very bad":1,
-                     "Very motivated":5,"Somewhat motivated":4,"Neutral":3,"Little motivated":2,"Not motivated at all":1,
-                     "Very well":5,"Well":4,"Average":3,"Poorly":2,"Very poorly":1,
-                     "Very low":5,"Low":4,"Moderate":3,"High":2,"Very high":1,
-                     "Very connected":5,"Somewhat connected":4,"Neutral":3,"Somewhat disconnected":2,"Very disconnected":1}
-        total = sum(score_map.get(a,3) for a in answers)
-        avg = total / len(questions)
-        if avg >= 4.5: analysis, suggested="Very Positive and Happy","happy"
-        elif avg >= 3.5: analysis, suggested="Generally Positive","okay"
-        elif avg >= 2.5: analysis, suggested="Neutral","okay"
-        elif avg >= 1.5: analysis, suggested="Stressed or Negative","traumatized"
-        else: analysis, suggested="Very Negative or Upset","harassed"
-        st.markdown(f"**Average Mood Score:** {avg:.2f}")
-        st.info(f"Analysis: {analysis}")
-        st.markdown(f"**Suggested Chat Tone:** `{suggested}`")
-        if st.button("Use Suggested Tone"):
-            st.session_state.active_mood = suggested
-            st.success(f"Applied mood `{suggested}` to chat.")
-
-# ---------- Meme Generator ----------
-with tabs[2]:
     st.subheader("😂 Meme Generator")
     if st.button("Generate Meme"):
         try:
@@ -136,15 +87,60 @@ with tabs[2]:
         except Exception as e:
             st.error("Meme fetch failed: " + str(e))
 
-# ---------- Mood Log ----------
-with tabs[3]:
-    st.subheader("📓 Mood Log")
-    colA, colB = st.columns([2,1])
-    with colA: mood = st.selectbox("Log current mood", ["😊 Happy","😔 Sad","😡 Angry","😴 Tired","😎 Chill"])
-    with colB:
-        if st.button("Log Mood Entry"): st.session_state.mood_log.append({"mood":mood,"timestamp":datetime.now().strftime("%Y-%m-%d %H:%M:%S")}); st.success("Mood logged.")
-    if st.session_state.mood_log: st.write(st.session_state.mood_log)
+# --------- Center Column (Chat) ---------
+with center_col:
+    st.subheader("💬 Zypher Chat")
+    user_input = st.text_input("Type your message here...", key="chat_input")
+    if st.button("Send") and user_input.strip():
+        st.session_state.chat_history.append({"from":"user","text":user_input})
+        reply = call_genai(user_input, st.session_state.active_mood)
+        st.session_state.chat_history.append({"from":"bot","text":reply})
 
-# ---------- Footer ----------
+    chat_html = '<div class="chat-container">'
+    for item in st.session_state.chat_history:
+        text = html.escape(item.get("text",""))
+        if item.get("from")=="user":
+            chat_html += f'<div class="user-bubble">{text}</div>'
+        else:
+            chat_html += f'<div class="bot-bubble">{text}</div>'
+    chat_html += '</div>'
+    st.markdown(chat_html, unsafe_allow_html=True)
+    if st.button("Clear Chat"): st.session_state.chat_history = []
+
+# --------- Mood Analyzer at Bottom ---------
+st.subheader("📋 Mood Analyzer")
+questions = [
+    {"q":"How have you been feeling today?","opts":["Very good","Good","Neutral","Bad","Very bad"]},
+    {"q":"How motivated are you?","opts":["Very motivated","Somewhat motivated","Neutral","Little motivated","Not motivated at all"]},
+    {"q":"How well did you sleep?","opts":["Very well","Well","Average","Poorly","Very poorly"]},
+    {"q":"Rate your stress level:","opts":["Very low","Low","Moderate","High","Very high"]},
+    {"q":"Connected with others recently?","opts":["Very connected","Somewhat connected","Neutral","Somewhat disconnected","Very disconnected"]}
+]
+with st.form("mood_form"):
+    answers=[]
+    for i,qq in enumerate(questions):
+        answers.append(st.radio(qq["q"], qq["opts"], index=2, key=f"q{i}"))
+    submit = st.form_submit_button("Analyze Mood")
+if submit:
+    score_map = {"Very good":5,"Good":4,"Neutral":3,"Bad":2,"Very bad":1,
+                 "Very motivated":5,"Somewhat motivated":4,"Neutral":3,"Little motivated":2,"Not motivated at all":1,
+                 "Very well":5,"Well":4,"Average":3,"Poorly":2,"Very poorly":1,
+                 "Very low":5,"Low":4,"Moderate":3,"High":2,"Very high":1,
+                 "Very connected":5,"Somewhat connected":4,"Neutral":3,"Somewhat disconnected":2,"Very disconnected":1}
+    total = sum(score_map.get(a,3) for a in answers)
+    avg = total / len(questions)
+    if avg >= 4.5: analysis, suggested="Very Positive and Happy","happy"
+    elif avg >= 3.5: analysis, suggested="Generally Positive","okay"
+    elif avg >= 2.5: analysis, suggested="Neutral","okay"
+    elif avg >= 1.5: analysis, suggested="Stressed or Negative","traumatized"
+    else: analysis, suggested="Very Negative or Upset","harassed"
+    st.markdown(f"**Average Mood Score:** {avg:.2f}")
+    st.info(f"Analysis: {analysis}")
+    st.markdown(f"**Suggested Chat Tone:** `{suggested}`")
+    if st.button("Use Suggested Tone"):
+        st.session_state.active_mood = suggested
+        st.success(f"Applied mood `{suggested}` to chat.")
+
+# --------- Footer ---------
 st.markdown('<div style="text-align:center;color:#999;padding:8px;font-size:12px;">🔒 All conversations are end-to-end encrypted. Your privacy is 100% safe here.</div>', unsafe_allow_html=True)
 
