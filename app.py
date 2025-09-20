@@ -6,7 +6,7 @@ import requests, random, html
 from datetime import datetime
 from io import BytesIO
 from PIL import Image
-import streamlit.components.v1 as components  # for auto-scroll
+import streamlit.components.v1 as components  # needed for auto-scroll
 
 # 1) PAGE SETUP
 st.set_page_config(page_title="Zypher AI Bot", page_icon="🌿", layout="wide")
@@ -31,12 +31,21 @@ st.markdown("""
     margin:0.5rem 0; padding:0.5rem 1rem; max-width:75%; display:inline-block;
     line-height:1.4; color:#fff;
   }
-  .user-bubble { background:#1565c0; border-radius:1rem 1rem 0.5rem 1rem; }
-  .bot-bubble  { background:#2e7d32; border-radius:1rem 1rem 1rem 0.5rem; }
-  .timestamp { display:block; font-size:0.7rem; color:#ccc; margin-top:0.2rem; }
+  .user-bubble {
+    background:#1565c0; border-radius:1rem 1rem 0.5rem 1rem;
+  }
+  .bot-bubble {
+    background:#2e7d32; border-radius:1rem 1rem 1rem 0.5rem;
+  }
+  .timestamp {
+    display:block; font-size:0.7rem; color:#ccc; margin-top:0.2rem;
+  }
 
   /* Dark mode page */
-  .stApp { background-color:#121212; color:#e0e0e0; }
+  .stApp {
+    background-color:#121212;
+    color:#e0e0e0;
+  }
   h1,h2,h3 { margin-top:0.2rem; margin-bottom:0.5rem; color:#fff; }
 
   /* Scrollable chat box */
@@ -47,14 +56,6 @@ st.markdown("""
     border: 1px solid #333;
     border-radius: 10px;
     background: #1e1e1e;
-  }
-  /* Sticky input */
-  .sticky-input {
-    position: sticky;
-    bottom: 0;
-    padding-top: 5px;
-    background: #121212;
-    z-index: 999;
   }
 </style>
 """, unsafe_allow_html=True)
@@ -147,11 +148,10 @@ with left_col:
             current_mood = tone
             st.success(f"Chat tone set to {tone}")
 
-# --- RIGHT PANEL: Chatbot with sticky input
+# --- RIGHT PANEL: Chatbot
 with right_col:
     st.header("🌿 Zypher Chatbot")
 
-    # Function to render chat messages inside the scrollable box
     def render_chat():
         chat_html = '<div class="chat-box">'
         for msg in st.session_state.chat_history:
@@ -165,28 +165,22 @@ with right_col:
         # auto-scroll
         components.html("""
             <script>
-            var chat = document.querySelector('.chat-box');
+            var chat = parent.document.querySelector('section.main');
             if(chat) chat.scrollTop = chat.scrollHeight;
             </script>
         """, height=0)
 
     render_chat()
 
-    # Sticky input container
-    st.markdown('<div class="sticky-input">', unsafe_allow_html=True)
-    user_input = st.text_input("", key="user_input_sticky", placeholder="Type your message…")
-    if st.button("Send", key="send_sticky"):
-        txt = (st.session_state.get("user_input_sticky") or "").strip()
-        if txt:
-            now = datetime.now().strftime("%H:%M")
-            st.session_state.chat_history.append({"from":"user","text":txt,"timestamp":now})
-            reply = get_bot_response(txt, current_mood)
-            st.session_state.chat_history.append({
-                "from":"bot","text":reply,"timestamp":datetime.now().strftime("%H:%M")
-            })
-            st.session_state.user_input_sticky = ""
-            st.experimental_rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+    user_input = st.chat_input("Type your message…")
+    if user_input:
+        now = datetime.now().strftime("%H:%M")
+        st.session_state.chat_history.append({"from":"user","text":user_input,"timestamp":now})
+        reply = get_bot_response(user_input, current_mood)
+        st.session_state.chat_history.append({
+            "from":"bot","text":reply,"timestamp":datetime.now().strftime("%H:%M")
+        })
+        render_chat()
 
 # 6) FOOTER NOTE
 st.markdown(
