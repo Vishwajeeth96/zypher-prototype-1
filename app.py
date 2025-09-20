@@ -44,18 +44,11 @@ def get_bot_response(user_input, mood="neutral"):
 # ---------------- Custom CSS ----------------
 st.markdown("""
 <style>
-.left-panel {
+.left-panel-box {
     background-color:#0d1117;
-    padding:15px;
+    padding:20px;
     border-radius:10px;
     color:#c9d1d9;
-    height:90vh;
-    overflow-y:auto;
-}
-.right-panel {
-    background-color:#f5f6f7;
-    padding:15px;
-    border-radius:10px;
     height:90vh;
     overflow-y:auto;
 }
@@ -68,12 +61,13 @@ h1,h2,h3 {margin:5px 0;}
 """, unsafe_allow_html=True)
 
 # ---------------- Layout ----------------
-left_col, chat_col = st.columns([0.9,2.3])
+left_col, chat_col = st.columns([1,2.5])
 
-# ---------------- Left Panel ----------------
+# ---------------- Left Panel (Single Box) ----------------
 with left_col:
-    st.markdown('<div class="left-panel">', unsafe_allow_html=True)
+    st.markdown('<div class="left-panel-box">', unsafe_allow_html=True)
 
+    # Mood Log
     st.header("🌸 Mood Log")
     current_mood = st.radio("Current Mood", ["happy","sad","angry","neutral"], horizontal=True)
     if st.button("Log Mood"):
@@ -86,6 +80,7 @@ with left_col:
         for entry in reversed(st.session_state.mood_log[-5:]):
             st.write(f"{entry['timestamp']} → {entry['mood']}")
 
+    # Meme Generator
     st.header("😂 Meme Generator")
     if st.button("Generate Meme"):
         try:
@@ -99,6 +94,7 @@ with left_col:
         except Exception as e:
             st.error("Meme fetch failed: "+str(e))
 
+    # Mood Analyzer
     st.header("📋 Mood Analyzer")
     questions = [
         {"q":"How have you been feeling today?","opts":["Very good","Good","Neutral","Bad","Very bad"]},
@@ -136,8 +132,7 @@ with left_col:
 
 # ---------------- Chat Panel ----------------
 with chat_col:
-    st.markdown('<div class="right-panel">', unsafe_allow_html=True)
-    st.subheader("🌿 Zypher Chatbot")  # Removed extra white box
+    st.subheader("🌿 Zypher Chatbot")  # No extra white box
 
     user_input = st.chat_input("Type your message...")
     if user_input:
@@ -161,8 +156,6 @@ with chat_col:
 
     if st.button("Clear Chat"):
         st.session_state.chat_history = []
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
+        
 # ---------------- Footer ----------------
 st.markdown('<div style="text-align:center;color:#999;padding:8px;font-size:12px;">🔒 All conversations are end-to-end encrypted. Your privacy is 100% safe here.</div>', unsafe_allow_html=True)
