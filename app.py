@@ -12,7 +12,7 @@ st.set_page_config(page_title="Zypher AI Bot", page_icon="🌿", layout="wide")
 # --- DARK MODE & BUBBLES FIX ---
 st.markdown("""
 <style>
-  div[data-testid="stChatMessage"],
+  div[data-testid="stChatMessage"], 
   div[data-testid="stChatMessageList"],
   div[data-testid="stChatInput"] {
       background: transparent !important;
@@ -131,28 +131,28 @@ with right_col:
     if st.button("Clear Chat"):
         st.session_state.chat_history = []
 
-    # RENDER CHAT (shows all bubbles, latest at bottom — no scrolling)
+    # render messages from oldest to newest
     def render_chat():
         for msg in st.session_state.chat_history:
-            txt = html.escape(msg.get("text",""))
-            ts  = msg.get("timestamp","")
-            cls = "user-bubble" if msg.get("from")=="user" else "bot-bubble"
-            prefix = "🧑 You: " if msg.get("from")=="user" else "🤖 Zypher: "
+            txt = html.escape(msg.get("text", ""))
+            ts = msg.get("timestamp", "")
+            cls = "user-bubble" if msg.get("from") == "user" else "bot-bubble"
+            prefix = "🧑 You: " if msg.get("from") == "user" else "🤖 Zypher: "
             st.markdown(
                 f'<div class="{cls}"><b>{prefix}</b>{txt}'
                 f'<span class="timestamp">{ts}</span></div>',
-                unsafe_allow_html=True
+                unsafe_allow_html=True,
             )
-    render_chat()
 
+    render_chat()  # render the chat history first
+
+    # User input below the messages
     user_input = st.chat_input("Type your message…")
     if user_input:
         now = datetime.now().strftime("%H:%M")
-        st.session_state.chat_history.append({"from":"user","text":user_input,"timestamp":now})
+        st.session_state.chat_history.append({"from": "user", "text": user_input, "timestamp": now})
         reply = get_bot_response(user_input, current_mood)
-        st.session_state.chat_history.append({
-            "from":"bot","text":reply,"timestamp":datetime.now().strftime("%H:%M")
-        })
+        st.session_state.chat_history.append({"from": "bot", "text": reply, "timestamp": datetime.now().strftime("%H:%M")})
         render_chat()
 
 # 6) FOOTER NOTE
