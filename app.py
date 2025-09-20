@@ -1,12 +1,13 @@
 # app.py — Zypher • Youth Mental Wellness
 # Requirements: streamlit, pandas, requests, Pillow, google-generativeai
-# Save logo (optional) at: assets/team_zypher_logo_transparent.png
+# Save logo at: assets/team_zypher_logo_transparent.png
 # Run: pip install -r requirements.txt
 # streamlit run app.py
 
 import os
 import html
 from io import BytesIO
+import random
 import streamlit as st
 import pandas as pd
 import requests
@@ -106,8 +107,6 @@ def init_genai():
         return None, "GenAI library not installed."
     
     api_key = st.secrets.get("GOOGLE_API_KEY", None)
-    if not api_key and "general" in st.secrets and "GOOGLE_API_KEY" in st.secrets["general"]:
-        api_key = st.secrets["general"]["GOOGLE_API_KEY"]
     if not api_key:
         return None, "No Google API Key set in Streamlit Secrets."
     
@@ -120,12 +119,23 @@ def init_genai():
 
 genai_model, genai_error = init_genai()
 
+# ---------------- Chat helper ----------------
 def call_genai(prompt, tone_hint="empathetic"):
     if not genai_model:
-        return f"⚠️ GenAI unavailable: {genai_error}\nPlease set your GOOGLE_API_KEY in Streamlit Secrets."
+        # Fallback bot responses
+        fallback_responses = [
+            "I hear you. Can you tell me more?",
+            "That sounds tough. How are you coping?",
+            "Thanks for sharing. Let's talk about it.",
+            "I understand. Do you want to explore solutions?"
+        ]
+        return random.choice(fallback_responses)
     full_prompt = f"You are Zypher, an empathetic youth wellness bot. Tone: {tone_hint}.\nUser: {prompt}\nAssistant:"
-    resp = genai_model.generate_content(full_prompt)
-    return getattr(resp, "text", str(resp))
+    try:
+        resp = genai_model.generate_content(full_prompt)
+        return getattr(resp, "text", str(resp))
+    except:
+        return "Hmm, I couldn't generate a response right now. Try again!"
 
 # ---------------- UI ----------------
 st.html('<div class="container"></div>')  # container wrapper
@@ -170,10 +180,6 @@ with tabs[0]:
             chat_html += f'<div class="bot-bubble">{text}</div>'
     chat_html += '</div>'
     st.html(chat_html)
-
-    # Friendly warning if no API key
-    if not genai_model:
-        st.html(f'<div class="warning-box">⚠️ GenAI unavailable: {genai_error}<br>Set your GOOGLE_API_KEY in Streamlit Secrets to enable chat responses.</div>')
 
 # ---------- Mood Analyzer ----------
 with tabs[1]:
@@ -246,4 +252,5 @@ with tabs[3]:
 
 # ---------- Footer ----------
 st.html('<div class="footer">🔒 All conversations are end-to-end encrypted. Your privacy is 100% safe here.</div>')
+
 
