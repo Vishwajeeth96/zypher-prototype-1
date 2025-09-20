@@ -49,17 +49,36 @@ def get_bot_response(user_input, mood="neutral"):
     except:
         return random.choice(fallback_responses.get(mood, ["I’m here for you. 💙"]))
 
-# ---------------- Custom CSS for Panel Colors ----------------
+# ---------------- Custom CSS ----------------
 st.markdown("""
 <style>
-.left-panel {background-color:#121212;padding:15px;border-radius:8px;color:#e0e0e0; height:100%;}
-.right-panel {background-color:#f5f5f5;padding:15px;border-radius:8px;}
-.stRadio > label {color:#e0e0e0;}
+.left-panel {
+    background-color:#0d1117;
+    padding:15px;
+    border-radius:8px;
+    color:#c9d1d9;
+    height:90vh;
+    overflow-y:auto;
+}
+.right-panel {
+    background-color:#f8f9fa;
+    padding:15px;
+    border-radius:8px;
+    height:90vh;
+}
+.stRadio > label {color:#c9d1d9;}
+.stButton>button {
+    background: linear-gradient(90deg, #ff79c6, #8a2be2);
+    color: #fff;
+    font-weight: 600;
+    border-radius: 8px;
+    padding:6px 12px;
+}
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------- Layout Columns ----------------
-left_col, chat_col = st.columns([0.8,2.2])  # smaller left panel, larger right panel
+left_col, chat_col = st.columns([0.8,2.2])
 
 # ---------------- Left Panel ----------------
 with left_col:
@@ -132,8 +151,6 @@ with left_col:
 # ---------------- Chat Column ----------------
 with chat_col:
     st.markdown('<div class="right-panel">', unsafe_allow_html=True)
-    st.markdown("<div style='margin-top:20px;'>", unsafe_allow_html=True)  # start chat a bit lower
-
     st.title("🌿 Zypher Chatbot")
     user_input = st.chat_input("Type your message...")
     if user_input:
@@ -164,8 +181,6 @@ with chat_col:
         st.session_state.chat_history = []
 
     st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------- Footer ----------------
 st.markdown('<div style="text-align:center;color:#999;padding:8px;font-size:12px;">🔒 All conversations are end-to-end encrypted. Your privacy is 100% safe here.</div>', unsafe_allow_html=True)
-
