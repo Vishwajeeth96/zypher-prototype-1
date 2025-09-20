@@ -47,16 +47,6 @@ st.markdown("""
     color:#e0e0e0;
   }
   h1,h2,h3 { margin-top:0.2rem; margin-bottom:0.5rem; color:#fff; }
-
-  /* Scrollable chat box */
-  .chat-box {
-    max-height: 500px; 
-    overflow-y: auto;
-    padding: 10px;
-    border: 1px solid #333;
-    border-radius: 10px;
-    background: #1e1e1e;
-  }
 </style>
 """, unsafe_allow_html=True)
 
@@ -65,7 +55,7 @@ api_key = st.secrets.get("GEMINI_API_KEY", None)
 if api_key:
     genai.configure(api_key=api_key)
 else:
-    st.error("⚠ GEMINI_API_KEY not found! Please add it to secrets.toml")
+    st.error("⚠️ GEMINI_API_KEY not found! Please add it to secrets.toml")
     st.stop()
 
 # 3) SESSION STATE
@@ -75,7 +65,7 @@ st.session_state.setdefault("chat_history", [])
 # 4) FALLBACKS & BOT HELPER
 fallbacks = {
     "happy":   ["That’s amazing! 🌸","Keep shining! ✨","Happiness suits you! 💖"],
-    "sad":     ["I hear you 💙","It’s okay to not feel okay 🌧","Sending a hug 🤗"],
+    "sad":     ["I hear you 💙","It’s okay to not feel okay 🌧️","Sending a hug 🤗"],
     "angry":   ["Breathe in… breathe out 🧘","It’s okay to vent 💢","Need a calming tip?"],
     "neutral": ["I’m listening 👂","Tell me more…","Thanks for sharing 💭"]
 }
@@ -112,9 +102,9 @@ with left_col:
             url, cap = m.get("url"), m.get("title","")
             if url and (url.endswith(".jpg") or url.endswith(".png")):
                 img = Image.open(BytesIO(requests.get(url).content))
-                st.image(img, caption=cap, use_container_width=True)
+                st.image(img, caption=cap, use_container_width=True)  # FIXED
             else:
-                st.warning("⚠ No image meme available, here’s a text joke instead:")
+                st.warning("⚠️ No image meme available, here’s a text joke instead:")
                 st.info(m.get("title", "😂 Keep smiling!"))
         except Exception as e:
             st.error(f"Failed to fetch meme. ({e})")
@@ -142,7 +132,7 @@ with left_col:
         elif avg>=1.5: analysis, tone = "Stressed or Negative","sad"
         else:           analysis, tone = "Very Negative or Upset","angry"
 
-        st.markdown(f"*Avg. Score:* {avg:.2f}")
+        st.markdown(f"**Avg. Score:** {avg:.2f}")
         st.info(f"Analysis: {analysis}")
         if st.button("Apply Suggested Tone"):
             current_mood = tone
@@ -152,17 +142,19 @@ with left_col:
 with right_col:
     st.header("🌿 Zypher Chatbot")
 
+    # render messages
     def render_chat():
-        chat_html = '<div class="chat-box">'
         for msg in st.session_state.chat_history:
             txt = html.escape(msg.get("text",""))
             ts  = msg.get("timestamp","")
             cls = "user-bubble" if msg.get("from")=="user" else "bot-bubble"
             prefix = "🧑 You: " if msg.get("from")=="user" else "🤖 Zypher: "
-            chat_html += f'<div class="{cls}"><b>{prefix}</b>{txt}<span class="timestamp">{ts}</span></div>'
-        chat_html += "</div>"
-        st.markdown(chat_html, unsafe_allow_html=True)
-        # auto-scroll
+            st.markdown(
+                f'<div class="{cls}"><b>{prefix}</b>{txt}'
+                f'<span class="timestamp">{ts}</span></div>',
+                unsafe_allow_html=True
+            )
+        # auto-scroll like ChatGPT
         components.html("""
             <script>
             var chat = parent.document.querySelector('section.main');
@@ -172,6 +164,7 @@ with right_col:
 
     render_chat()
 
+    # input
     user_input = st.chat_input("Type your message…")
     if user_input:
         now = datetime.now().strftime("%H:%M")
