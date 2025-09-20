@@ -59,9 +59,11 @@ st.markdown("""
 }
 h1,h2,h3 {margin:5px 0;}
 .chat-container {
-    max-height:90vh;
+    height:90vh;
     overflow-y:auto;
     padding:10px;
+    border-radius:10px;
+    background-color:#f5f5f5;
 }
 .user-bubble {
     background: #8be9fd;
@@ -81,13 +83,13 @@ h1,h2,h3 {margin:5px 0;}
 }
 .timestamp {
     font-size:10px;
-    color:#999;
+    color:#555;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------- Layout ----------------
-left_col, chat_col = st.columns([1,2.5])
+left_col, chat_col = st.columns([1,2])
 
 # ---------------- Left Panel (Single Box) ----------------
 with left_col:
@@ -189,4 +191,4 @@ with chat_col:
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------- Footer ----------------
-st.markdown('<div style="text-align:center;color:#999;padding:8px;font-size:12px;">🔒 All conversations are end-to-end encrypted. Your privacy is 100% safe here.</div>', unsafe_allow_html=True)
+st.markdown('<div style="text-align:center;color:#555;padding:8px;font-size:12px;">🔒 All conversations are end-to-end encrypted. Your privacy is 100% safe here.</div>', unsafe_allow_html=True)
