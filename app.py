@@ -6,6 +6,7 @@ import random
 import requests
 from io import BytesIO
 from PIL import Image
+import html
 
 # ---------------- Page Config ----------------
 st.set_page_config(page_title="Zypher - Youth Mental Wellness", page_icon="🌿", layout="wide")
@@ -57,6 +58,31 @@ st.markdown("""
     color:#fff;font-weight:600;border-radius:8px;padding:6px 12px;
 }
 h1,h2,h3 {margin:5px 0;}
+.chat-container {
+    max-height:90vh;
+    overflow-y:auto;
+    padding:10px;
+}
+.user-bubble {
+    background: #8be9fd;
+    color: #000;
+    padding: 10px 14px;
+    border-radius: 15px 15px 0 15px;
+    margin:5px 0;
+    max-width:75%;
+}
+.bot-bubble {
+    background: #6272a4;
+    color:#fff;
+    padding: 10px 14px;
+    border-radius: 15px 15px 15px 0;
+    margin:5px 0;
+    max-width:75%;
+}
+.timestamp {
+    font-size:10px;
+    color:#999;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -132,7 +158,22 @@ with left_col:
 
 # ---------------- Chat Panel ----------------
 with chat_col:
-    st.subheader("🌿 Zypher Chatbot")  # No extra white box
+    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+    st.subheader("🌿 Zypher Chatbot")  # No white box
+
+    chat_placeholder = st.empty()
+
+    # Display chat
+    def display_chat():
+        with chat_placeholder.container():
+            for msg in st.session_state.chat_history:
+                text = html.escape(str(msg.get("text","")))
+                time = msg.get("time","")
+                if msg.get("from")=="user":
+                    st.markdown(f'<div class="user-bubble">{text}<div class="timestamp">{time}</div></div>', unsafe_allow_html=True)
+                else:
+                    st.markdown(f'<div class="bot-bubble">{text}<div class="timestamp">{time}</div></div>', unsafe_allow_html=True)
+            st.markdown('<div id="bottom"></div>', unsafe_allow_html=True)
 
     user_input = st.chat_input("Type your message...")
     if user_input:
@@ -144,18 +185,8 @@ with chat_col:
             "from":"bot","text":str(reply),"time":datetime.now().strftime("%H:%M")
         })
 
-    for msg in st.session_state.chat_history:
-        text = str(msg.get("text",""))
-        time = msg.get("time","")
-        if msg.get("from")=="user":
-            with st.chat_message("user"):
-                st.markdown(f"👤 **You:** {text}  \n*{time}*")
-        else:
-            with st.chat_message("assistant"):
-                st.markdown(f"🤖 **Zypher:** {text}  \n*{time}*")
+    display_chat()
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    if st.button("Clear Chat"):
-        st.session_state.chat_history = []
-        
 # ---------------- Footer ----------------
 st.markdown('<div style="text-align:center;color:#999;padding:8px;font-size:12px;">🔒 All conversations are end-to-end encrypted. Your privacy is 100% safe here.</div>', unsafe_allow_html=True)
