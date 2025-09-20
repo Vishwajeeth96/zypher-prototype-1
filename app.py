@@ -1,6 +1,4 @@
 # app.py — Zypher • Youth Mental Wellness
-# Requirements: streamlit, google-generativeai, requests, Pillow
-
 import streamlit as st
 import google.generativeai as genai
 from datetime import datetime
@@ -36,7 +34,6 @@ fallback_responses = {
 # ---------------- Session State ----------------
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
-
 if "mood_log" not in st.session_state:
     st.session_state.mood_log = []
 
