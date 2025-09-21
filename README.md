@@ -1,28 +1,28 @@
 # Zypher AI Bot 🤖
 
-Zypher AI Bot is a Streamlit-based chatbot powered by **Google's Generative AI (Gemini 1.5)**. It allows users to chat with an AI teammate and includes a fun **meme generator** for coders and tech enthusiasts.
+Zypher AI Bot is a Streamlit-based chatbot powered by **Google's Gemini 1.5 Generative AI**.  
+It’s designed as a **youth mental wellness prototype**, combining AI support with engaging tools like memes and mood tracking.
 
 ---
 
-## Features
-
-- Chat with AI using natural language
-- Black & Green dark theme UI
-- Persistent chat history during the session
-- Meme generator with AI-generated captions
-- Easy-to-use interface
-
----
-
-## Screenshots
-
-*(Optional: Add screenshots of your Streamlit app here)*
+## ✨ Features
+- 💬 Chat naturally with AI  
+- 🖤 Black & green **dark theme UI**  
+- 📂 Persistent chat history (per session)  
+- 🎭 Meme generator with AI-generated captions  
+- 📊 Mood analyzer & mood log tracker  
+- 🎨 Clean, easy-to-use interface  
 
 ---
 
-## Installation
+## 📸 Screenshots
+*(Optional: Add screenshots of your app here for demo purposes)*
 
-1. Clone the repository:
+---
+
+## 🛠️ Installation
+
+Clone the repository:
 
 ```bash
 git clone <your-repo-url>
