@@ -1,18 +1,20 @@
 import streamlit as st
-import requests
 import random
-import html
 from datetime import datetime
 from io import BytesIO
 from PIL import Image
+import requests
+import html
 
-# --- PAGE SETUP ---
+# 1️⃣ PAGE SETUP
 st.set_page_config(page_title="Zypher AI Bot", page_icon="🌿", layout="wide")
 
-# --- STYLING ---
+# --- DARK MODE & BUBBLES FIX ---
 st.markdown("""
 <style>
-  div[data-testid="stChatMessage"], div[data-testid="stChatMessageList"], div[data-testid="stChatInput"] {
+  div[data-testid="stChatMessage"],
+  div[data-testid="stChatMessageList"],
+  div[data-testid="stChatInput"] {
       background: transparent !important;
       border: none !important;
       box-shadow: none !important;
@@ -31,62 +33,68 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- SESSION STATE ---
+# 2️⃣ SESSION STATE
 st.session_state.setdefault("mood_log", [])
 st.session_state.setdefault("chat_history", [])
 
-# --- FALLBACKS ---
+# 3️⃣ FALLBACK RESPONSES
 fallbacks = {
-    "happy":   ["That’s amazing! 🌸","Keep shining! ✨","Happiness suits you! 💖"],
-    "sad":     ["I hear you 💙","It’s okay to not feel okay 🌧️","Sending a hug 🤗"],
-    "angry":   ["Breathe in… breathe out 🧘","It’s okay to vent 💢","Need a calming tip?"],
-    "neutral": ["I’m listening 👂","Tell me more…","Thanks for sharing 💭"]
+    "happy": [
+        "Yay! 😄", "Keep shining! 🌸", "Happiness suits you! 💖", 
+        "Woohoo! 🎉", "That’s amazing! ✨"
+    ],
+    "sad": [
+        "I hear you 💙", "It’s okay to not feel okay 🌧️", "Sending a hug 🤗",
+        "Stay strong, bro 💪", "Cheer up! 🌈"
+    ],
+    "angry": [
+        "Breathe in… breathe out 🧘", "It’s okay to vent 💢", 
+        "Need a calming tip?", "Take a short walk 🚶", "Relax a bit 😌"
+    ],
+    "neutral": [
+        "I’m listening 👂", "Tell me more…", "Thanks for sharing 💭",
+        "Hmm… interesting 🤔", "Go on…"
+    ],
+    "default": [
+        "Cool!", "I see!", "That’s nice!", "Got it! 👍", "Hmm… okay!"
+    ]
 }
 
-# --- BOT FUNCTION USING OPENAI API ---
-def get_bot_response(text, mood="neutral"):
-    try:
-        url = "https://api.openai.com/v1/chat/completions"
-        payload = {
-            "model": "gpt-3.5-turbo",
-            "messages":[{"role":"user","content": text}]
-        }
-        headers = {"Authorization": f"Bearer {st.secrets['OPENAI_API_KEY']}"}
-        res = requests.post(url, json=payload, headers=headers, timeout=10).json()
-        
-        # DEBUG: print full response if needed
-        # print("DEBUG OpenAI response:", res)
-        
-        if "choices" in res and len(res["choices"]) > 0:
-            return res["choices"][0]["message"]["content"].strip()
-        else:
-            raise ValueError(f"No 'choices' in response: {res}")
-            
-    except Exception as e:
-        st.warning(f"⚠️ OpenAI API error: {e}")
-        return random.choice(fallbacks.get(mood, ["I’m here for you 💙"]))
+# Optional: keyword-based responses
+keywords = {
+    "hello": ["Hey there! 🌿", "Hi! How’s it going?", "Hello! 😎"],
+    "hi": ["Hi! 🌸", "Hey! How are you?", "Hello! 😄"],
+    "name": ["I’m Zypher, your AI buddy 🌿", "Call me Zypher! 😎"],
+    "meme": ["😂 Want a meme? Click the button on the left!", "Memes incoming! 🌟"],
+    "how are you": ["I’m good, thanks! How about you?", "Doing well 😄", "Feeling awesome! 💚"]
+}
 
-# --- LAYOUT: TWO COLUMNS ---
+# Function to get bot response
+def get_bot_response(text, mood="neutral"):
+    text_lower = text.lower()
+    for key, responses in keywords.items():
+        if key in text_lower:
+            return random.choice(responses)
+    # If no keyword match, use mood-based fallback
+    return random.choice(fallbacks.get(mood, fallbacks["default"]))
+
+# 4️⃣ LAYOUT: TWO COLUMNS
 left_col, right_col = st.columns([1, 2], gap="small")
 
 # --- LEFT PANEL ---
 with left_col:
     st.header("🌸 Mood Log")
     current_mood = st.radio("Select mood", ["happy","sad","angry","neutral"], horizontal=True, index=3)
-    
     if st.button("Log Mood"):
         ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         st.session_state.mood_log.append({"mood":current_mood, "timestamp":ts})
         st.success(f"Logged {current_mood} at {ts}")
-    
     if st.session_state.mood_log:
         st.subheader("📅 Recent Entries")
         for e in reversed(st.session_state.mood_log[-5:]):
             st.write(f"{e['timestamp']} → {e['mood']}")
-    
     st.markdown("---")
     st.header("😂 Meme Generator")
-    
     if st.button("Fetch Meme"):
         try:
             m = requests.get("https://meme-api.com/gimme", timeout=5).json()
@@ -95,14 +103,12 @@ with left_col:
                 img = Image.open(BytesIO(requests.get(url).content))
                 st.image(img, caption=cap, use_container_width=True)
             else:
-                st.warning("⚠️ No image meme, here's a text joke:")
+                st.warning("⚠️ No image meme available, here’s a text joke instead:")
                 st.info(m.get("title", "😂 Keep smiling!"))
-        except:
-            st.warning("Couldn't fetch a meme 😅")
-    
+        except Exception as e:
+            st.error(f"Failed to fetch meme. ({e})")
     st.markdown("---")
     st.header("📋 Mood Analyzer")
-    
     questions = [
         ("Feeling today?", ["Very good","Good","Neutral","Bad","Very bad"]),
         ("Motivation level?", ["Very high","High","Neutral","Low","Very low"]),
@@ -110,29 +116,26 @@ with left_col:
         ("Stress level?", ["Very low","Low","Moderate","High","Very high"]),
         ("Social connection?", ["Very connected","Connected","Neutral","Disconnected","Very disconnected"])
     ]
-    
     with st.form("analyze_form"):
         answers = [st.radio(q, opts, index=2, key=f"q{i}") for i,(q,opts) in enumerate(questions)]
         submitted = st.form_submit_button("Analyze Mood")
-    
     if submitted:
         score = {opt:5-i for _,opts in questions for i,opt in enumerate(opts)}
-        avg = sum(score.get(a,3) for a in answers) / len(questions)
+        avg = sum(score.get(a,3) for a in answers) / len(answers)
         if avg>=4.5: analysis, tone = "Very Positive & Happy","happy"
         elif avg>=3.5: analysis, tone = "Generally Positive","neutral"
         elif avg>=2.5: analysis, tone = "Neutral","neutral"
         elif avg>=1.5: analysis, tone = "Stressed or Negative","sad"
-        else: analysis, tone = "Very Negative or Upset","angry"
+        else:           analysis, tone = "Very Negative or Upset","angry"
         st.markdown(f"**Avg. Score:** {avg:.2f}")
         st.info(f"Analysis: {analysis}")
         if st.button("Apply Suggested Tone"):
             current_mood = tone
             st.success(f"Chat tone set to {tone}")
 
-# --- RIGHT PANEL: CHATBOT ---
+# --- RIGHT PANEL: Chatbot ---
 with right_col:
     st.header("🌿 Zypher Chatbot")
-    
     if st.button("Clear Chat"):
         st.session_state.chat_history = []
 
@@ -141,22 +144,17 @@ with right_col:
         now = datetime.now().strftime("%H:%M")
         st.session_state.chat_history.append({"from": "user", "text": user_input, "timestamp": now})
         reply = get_bot_response(user_input, current_mood)
-        st.session_state.chat_history.append({
-            "from": "bot", "text": reply, "timestamp": datetime.now().strftime("%H:%M")
-        })
+        st.session_state.chat_history.append({"from": "bot", "text": reply, "timestamp": datetime.now().strftime("%H:%M")})
 
-    def render_chat():
-        for msg in st.session_state.chat_history:
-            txt = html.escape(msg.get("text",""))
-            ts = msg.get("timestamp","")
-            cls = "user-bubble" if msg.get("from")=="user" else "bot-bubble"
-            prefix = "🧑 You: " if msg.get("from")=="user" else "🤖 Zypher: "
-            st.markdown(f'<div class="{cls}"><b>{prefix}</b>{txt}<span class="timestamp">{ts}</span></div>', unsafe_allow_html=True)
-    
-    render_chat()
+    # Render chat messages
+    for msg in st.session_state.chat_history:
+        txt = html.escape(msg.get("text", ""))
+        ts = msg.get("timestamp", "")
+        cls = "user-bubble" if msg.get("from")=="user" else "bot-bubble"
+        prefix = "🧑 You: " if msg.get("from")=="user" else "🤖 Zypher: "
+        st.markdown(f'<div class="{cls}"><b>{prefix}</b>{txt}<span class="timestamp">{ts}</span></div>', unsafe_allow_html=True)
 
-# --- FOOTER ---
+# 5️⃣ FOOTER NOTE
 st.markdown("<div style='text-align:center;color:#888;font-size:0.8rem;padding:0.5rem 0;'>🔒 Conversations are end-to-end encrypted.</div>", unsafe_allow_html=True)
-
 
 
