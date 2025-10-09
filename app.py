@@ -64,7 +64,12 @@ fallbacks = {
 def get_bot_response(text, mood="neutral"):
     try:
         mdl = genai.GenerativeModel("gemini-1.5-flash")
-        return mdl.generate_content(text).text.strip()
+        prompt = (
+            "You are Zypher, a kind and supportive AI friend. "
+            "Always respond helpfully and empathetically to the user's input.\n"
+            f"User: {text}\nZypher:"
+        )
+        return mdl.generate_content(prompt).text.strip()
     except:
         return random.choice(fallbacks.get(mood, ["I’m here for you. 💙"]))
 
