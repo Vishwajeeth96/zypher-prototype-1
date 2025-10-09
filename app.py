@@ -61,10 +61,12 @@ fallbacks = {
     "neutral": ["I’m listening 👂","Tell me more…","Thanks for sharing 💭"]
 }
 
+# 🚨 IMPORTANT: Replace 'YOUR_WORKING_MODEL' with the actual model from list_models
+MODEL_NAME = "YOUR_WORKING_MODEL"
+
 def get_bot_response(text, mood="neutral"):
     try:
-        # Use gemini-1.5-chat for proper conversation
-        mdl = genai.GenerativeModel("gemini-1.5-chat")
+        mdl = genai.GenerativeModel(MODEL_NAME)
         prompt = (
             "You are Zypher, a kind and supportive AI friend. "
             "Always respond helpfully and empathetically to the user's input.\n"
@@ -75,7 +77,6 @@ def get_bot_response(text, mood="neutral"):
             raise ValueError("Empty response from Gemini API")
         return response
     except Exception as e:
-        # Show error message in Streamlit for debugging
         st.warning(f"⚠️ Gemini API error: {e}")
         return random.choice(fallbacks.get(mood, ["I’m here for you. 💙"]))
 
@@ -170,4 +171,3 @@ st.markdown(
     "padding:0.5rem 0;'>🔒 Conversations are end-to-end encrypted.</div>",
     unsafe_allow_html=True
 )
-
