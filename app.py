@@ -1,3 +1,4 @@
+
 import streamlit as st
 import requests
 import random
@@ -156,5 +157,4 @@ with right_col:
 
 # --- FOOTER ---
 st.markdown("<div style='text-align:center;color:#888;font-size:0.8rem;padding:0.5rem 0;'>🔒 Conversations are end-to-end encrypted.</div>", unsafe_allow_html=True)
-
 
