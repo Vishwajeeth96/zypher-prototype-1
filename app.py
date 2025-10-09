@@ -1,4 +1,5 @@
 import streamlit as st
+import google.generativeai as genai
 import requests, random, html
 from datetime import datetime
 from io import BytesIO
@@ -40,13 +41,13 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 2) GROQ API INIT
-api_key = st.secrets.get("GROQ_API_KEY", None)
-if not api_key:
-    st.error("⚠️ GROQ_API_KEY not found! Please add it to secrets.toml")
+# 2) GEMINI API INIT
+api_key = st.secrets.get("GEMINI_API_KEY", None)
+if api_key:
+    genai.configure(api_key=api_key)
+else:
+    st.error("⚠️ GEMINI_API_KEY not found! Please add it to secrets.toml")
     st.stop()
-
-GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 # 3) SESSION STATE
 st.session_state.setdefault("mood_log", [])
@@ -61,24 +62,9 @@ fallbacks = {
 }
 
 def get_bot_response(text, mood="neutral"):
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "model": "llama3-8b-8192",
-        "messages": [
-            {"role": "system", "content": "You are Zypher, a kind and supportive AI friend."},
-            {"role": "user", "content": text}
-        ],
-        "temperature": 0.7
-    }
     try:
-        res = requests.post(GROQ_URL, headers=headers, json=payload, timeout=10)
-        if res.status_code == 200:
-            return res.json()["choices"][0]["message"]["content"].strip()
-        else:
-            return random.choice(fallbacks.get(mood, ["I’m here for you. 💙"]))
+        mdl = genai.GenerativeModel("gemini-1.5-flash")
+        return mdl.generate_content(text).text.strip()
     except:
         return random.choice(fallbacks.get(mood, ["I’m here for you. 💙"]))
 
@@ -125,7 +111,7 @@ with left_col:
         submitted = st.form_submit_button("Analyze Mood")
     if submitted:
         score = {opt:5-i for _,opts in questions for i,opt in enumerate(opts)}
-        avg = sum(score.get(a,3) for a in answers) / len(answers)
+        avg = sum(score.get(a,3) for a in answers) / len(questions)
         if avg>=4.5: analysis, tone = "Very Positive & Happy","happy"
         elif avg>=3.5: analysis, tone = "Generally Positive","neutral"
         elif avg>=2.5: analysis, tone = "Neutral","neutral"
