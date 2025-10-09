@@ -1,6 +1,5 @@
-# app.py — Zypher • Youth Mental Wellness Chatbot
 import streamlit as st
-import google.generativeai as genai
+from groq import Groq
 import requests, random, html
 from datetime import datetime
 from io import BytesIO
@@ -42,13 +41,13 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 2) GEMINI API INIT
-api_key = st.secrets.get("GEMINI_API_KEY", None)
-if api_key:
-    genai.configure(api_key=api_key)
-else:
-    st.error("⚠️ GEMINI_API_KEY not found! Please add it to secrets.toml")
+# 2) GROQ API INIT
+api_key = st.secrets.get("GROQ_API_KEY", None)
+if not api_key:
+    st.error("⚠️ GROQ_API_KEY not found! Please add it to secrets.toml")
     st.stop()
+
+client = Groq(api_key=api_key)
 
 # 3) SESSION STATE
 st.session_state.setdefault("mood_log", [])
@@ -61,11 +60,19 @@ fallbacks = {
     "angry":   ["Breathe in… breathe out 🧘","It’s okay to vent 💢","Need a calming tip?"],
     "neutral": ["I’m listening 👂","Tell me more…","Thanks for sharing 💭"]
 }
+
 def get_bot_response(text, mood="neutral"):
     try:
-        mdl = genai.GenerativeModel("gemini-1.5-flash")
-        return mdl.generate_content(text).text.strip()
-    except:
+        response = client.chat.completions.create(
+            model="llama3-8b-8192",
+            messages=[
+                {"role": "system", "content": "You are Zypher, a kind and supportive AI friend."},
+                {"role": "user", "content": text}
+            ],
+            temperature=0.7,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception:
         return random.choice(fallbacks.get(mood, ["I’m here for you. 💙"]))
 
 # 5) LAYOUT: TWO COLUMNS
@@ -127,11 +134,9 @@ with left_col:
 with right_col:
     st.header("🌿 Zypher Chatbot")
 
-    # CLEAR CHAT BUTTON
     if st.button("Clear Chat"):
         st.session_state.chat_history = []
 
-    # User input - handled first to update state on rerun
     user_input = st.chat_input("Type your message…")
     if user_input:
         now = datetime.now().strftime("%H:%M")
@@ -141,7 +146,6 @@ with right_col:
             "from": "bot", "text": reply, "timestamp": datetime.now().strftime("%H:%M")
         })
 
-    # Render chat messages once, oldest to newest
     def render_chat():
         for msg in st.session_state.chat_history:
             txt = html.escape(msg.get("text", ""))
