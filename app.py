@@ -1,4 +1,3 @@
-
 import streamlit as st
 import requests
 import random
@@ -44,26 +43,27 @@ fallbacks = {
     "neutral": ["I’m listening 👂","Tell me more…","Thanks for sharing 💭"]
 }
 
-# --- BOT FUNCTION USING RAPIDAPI ---
+# --- BOT FUNCTION USING OPENAI API ---
 def get_bot_response(text, mood="neutral"):
     try:
-        url = f"https://{st.secrets['RAPIDAPI_HOST']}/chat/completions"
+        url = "https://api.openai.com/v1/chat/completions"
         payload = {
             "model": "gpt-3.5-turbo",
             "messages":[{"role":"user","content": text}]
         }
-        headers = {
-            "content-type": "application/json",
-            "X-RapidAPI-Key": st.secrets["RAPIDAPI_KEY"],
-            "X-RapidAPI-Host": st.secrets["RAPIDAPI_HOST"]
-        }
+        headers = {"Authorization": f"Bearer {st.secrets['OPENAI_API_KEY']}"}
         res = requests.post(url, json=payload, headers=headers, timeout=10).json()
-        reply = res["choices"][0]["message"]["content"].strip()
-        if not reply:
-            raise ValueError("Empty response")
-        return reply
+        
+        # DEBUG: print full response if needed
+        # print("DEBUG OpenAI response:", res)
+        
+        if "choices" in res and len(res["choices"]) > 0:
+            return res["choices"][0]["message"]["content"].strip()
+        else:
+            raise ValueError(f"No 'choices' in response: {res}")
+            
     except Exception as e:
-        st.warning(f"⚠️ RapidAPI error: {e}")
+        st.warning(f"⚠️ OpenAI API error: {e}")
         return random.choice(fallbacks.get(mood, ["I’m here for you 💙"]))
 
 # --- LAYOUT: TWO COLUMNS ---
@@ -157,4 +157,6 @@ with right_col:
 
 # --- FOOTER ---
 st.markdown("<div style='text-align:center;color:#888;font-size:0.8rem;padding:0.5rem 0;'>🔒 Conversations are end-to-end encrypted.</div>", unsafe_allow_html=True)
+
+
 
