@@ -63,14 +63,20 @@ fallbacks = {
 
 def get_bot_response(text, mood="neutral"):
     try:
-        mdl = genai.GenerativeModel("gemini-1.5-flash")
+        # Use gemini-1.5-chat for proper conversation
+        mdl = genai.GenerativeModel("gemini-1.5-chat")
         prompt = (
             "You are Zypher, a kind and supportive AI friend. "
             "Always respond helpfully and empathetically to the user's input.\n"
             f"User: {text}\nZypher:"
         )
-        return mdl.generate_content(prompt).text.strip()
-    except:
+        response = mdl.generate_content(prompt).text.strip()
+        if not response:
+            raise ValueError("Empty response from Gemini API")
+        return response
+    except Exception as e:
+        # Show error message in Streamlit for debugging
+        st.warning(f"⚠️ Gemini API error: {e}")
         return random.choice(fallbacks.get(mood, ["I’m here for you. 💙"]))
 
 # 5) LAYOUT: TWO COLUMNS
@@ -164,3 +170,4 @@ st.markdown(
     "padding:0.5rem 0;'>🔒 Conversations are end-to-end encrypted.</div>",
     unsafe_allow_html=True
 )
+
