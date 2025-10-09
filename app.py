@@ -1,5 +1,4 @@
 import streamlit as st
-from groq import Groq
 import requests, random, html
 from datetime import datetime
 from io import BytesIO
@@ -47,7 +46,7 @@ if not api_key:
     st.error("⚠️ GROQ_API_KEY not found! Please add it to secrets.toml")
     st.stop()
 
-client = Groq(api_key=api_key)
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 # 3) SESSION STATE
 st.session_state.setdefault("mood_log", [])
@@ -62,17 +61,25 @@ fallbacks = {
 }
 
 def get_bot_response(text, mood="neutral"):
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": "llama3-8b-8192",
+        "messages": [
+            {"role": "system", "content": "You are Zypher, a kind and supportive AI friend."},
+            {"role": "user", "content": text}
+        ],
+        "temperature": 0.7
+    }
     try:
-        response = client.chat.completions.create(
-            model="llama3-8b-8192",
-            messages=[
-                {"role": "system", "content": "You are Zypher, a kind and supportive AI friend."},
-                {"role": "user", "content": text}
-            ],
-            temperature=0.7,
-        )
-        return response.choices[0].message.content.strip()
-    except Exception:
+        res = requests.post(GROQ_URL, headers=headers, json=payload, timeout=10)
+        if res.status_code == 200:
+            return res.json()["choices"][0]["message"]["content"].strip()
+        else:
+            return random.choice(fallbacks.get(mood, ["I’m here for you. 💙"]))
+    except:
         return random.choice(fallbacks.get(mood, ["I’m here for you. 💙"]))
 
 # 5) LAYOUT: TWO COLUMNS
@@ -102,8 +109,8 @@ with left_col:
             else:
                 st.warning("⚠️ No image meme available, here’s a text joke instead:")
                 st.info(m.get("title", "😂 Keep smiling!"))
-        except Exception as e:
-            st.error(f"Failed to fetch meme. ({e})")
+        except:
+            st.warning("Couldn't fetch a meme right now 😅")
     st.markdown("---")
     st.header("📋 Mood Analyzer")
     questions = [
